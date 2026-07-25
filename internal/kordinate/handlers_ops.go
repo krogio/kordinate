@@ -21,6 +21,8 @@ func (m *Module) depositQueue(w http.ResponseWriter, r *http.Request) {
 		"CanAssign":      canEdit(r),
 		"CanRefund":      canEdit(r),
 		"CanMarkSuccess": canEdit(r),
+		"Deposits":       []upstream.EFTNotification{},
+		"Pending":        []upstream.EFTNotification{},
 	}
 	data["Filter"] = map[string]string{
 		"Reference": strings.TrimSpace(r.URL.Query().Get("reference")),
@@ -124,7 +126,12 @@ func (m *Module) depositSuccess(w http.ResponseWriter, r *http.Request) {
 // ---------- Vouchers ----------
 
 func (m *Module) voucherList(w http.ResponseWriter, r *http.Request) {
-	data := map[string]any{"CanManage": canEdit(r)}
+	data := map[string]any{
+		"CanManage": canEdit(r),
+		// Always present: len/range on a missing key errors mid-render, which
+		// aborts the layout and takes the kernel drawer with it.
+		"Vouchers": []upstream.Voucher{},
+	}
 	data["Filter"] = map[string]string{
 		"Code": strings.TrimSpace(r.URL.Query().Get("code")),
 		"GUID": strings.TrimSpace(r.URL.Query().Get("guid")),
@@ -210,7 +217,11 @@ func (m *Module) deviceLookup(w http.ResponseWriter, r *http.Request) {
 		m.deny(w, r, "This action needs admin access.")
 		return
 	}
-	data := map[string]any{"CanBlock": canEdit(r), "CanBulkSuspend": canManage(r)}
+	data := map[string]any{
+		"CanBlock": canEdit(r), "CanBulkSuspend": canManage(r),
+		"Linked":  []upstream.Customer{},
+		"Devices": []upstream.Device{},
+	}
 	data["Filter"] = map[string]string{
 		"DeviceID": strings.TrimSpace(r.URL.Query().Get("device_id")),
 	}

@@ -40,6 +40,9 @@ func (m *Module) customerSearch(w http.ResponseWriter, r *http.Request) {
 		"Query":     q,
 		"Statuses":  allStatuses(),
 		"CanCreate": canEdit(r),
+		// Always present: len/range on a missing key errors mid-render, which
+		// aborts the layout and takes the kernel drawer down with it.
+		"Results": []*upstream.Customer{},
 	}
 
 	// An empty form is the landing state, not a search for everyone — running an
