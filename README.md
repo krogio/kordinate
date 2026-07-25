@@ -39,7 +39,7 @@ internal/kordinate/
   timeline.go                  cross-service event stitching
   docvet.go                    AI document vetting (advisory)
   redact.go                    burnt-in PII redaction
-  roles.go                     capability model + claire-admin role migration
+  roles.go                     the unredacted-document grant + claire-admin role migration
   upstream/                    microservice clients (live + fakes)
 ```
 
@@ -75,21 +75,33 @@ and no credentials.** Anything other than `live` fails safe to fake.
 
 ## Authorisation
 
-Three axes from kore (licence → section access → role) plus an explicit
-**capability** model in `roles.go` for actions too consequential to gate on role
-alone: refunds, payouts, bulk suspend, login-PIN reset, and revealing an
-unredacted document. claire-admin's eleven flat roles map onto groups +
-capabilities via `MapLegacyRole`, so an existing user list migrates without
-hand-mapping every account.
+kore's three axes do almost all the work: **licence → section access → role**. A
+route's minimum role gates the mutation; an `access.Section` rule (managed in the
+access admin UI, keyed on stable group IDs) gates which groups reach a feature at
+all. That is how, for example, sales and marketing are kept off
+`/kordinate/documents` — one rule an operator can change, not a constant in Go.
 
-Two deliberate choices:
+**One permission genuinely doesn't fit that model**, and it is the only thing
+`roles.go` exists for: viewing an **unredacted identity document**.
 
-- **`CapRevealUnredacted` is granted to no group by default**, including admin.
-  Being the deployment's administrator is a statement about configuration
-  rights, not a standing authorisation to read every customer's ID document.
-- **A failed redaction serves nothing.** If the redacted derivative can't be
-  produced for a redactable format, the request errors rather than falling back
-  to the original.
+- It can't be a role — admin is a statement about configuration rights, not a
+  standing authorisation to read every customer's ID number, address and
+  photograph. No role confers it, including admin.
+- It can't be a section rule — the redacted and unredacted views are the same
+  route.
+- So it's a per-user grant: persisted, **expiring by default** (30 days), granted
+  with a recorded reason, revocable, and logged on every use. The grant list on
+  the access-log screen *is* the answer to "who can see unredacted customer
+  documents" — the question claire-admin could only answer by grepping route
+  middleware.
+
+A failed redaction serves **nothing** — never the original as a fallback.
+
+claire-admin's eleven flat roles map onto kore groups + a role via
+`MapLegacyRole`, so an existing user list migrates without hand-mapping every
+account. An unrecognised role maps to the most restrictive combination rather
+than erroring: a migration must not grant access it can't explain, nor fail the
+whole import over one stale row.
 
 ## kore dependency
 
