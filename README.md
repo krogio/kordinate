@@ -103,23 +103,6 @@ account. An unrecognised role maps to the most restrictive combination rather
 than erroring: a migration must not grant access it can't explain, nor fail the
 whole import over one stale row.
 
-## kore dependency
-
-kordinate's AI document vetting needs **image input on `kore/ai`**
-(`ai.Request.Images`), and its templates use kore's `statusBadge`. Both live on
-the kore branch `feat/component-library-and-vision` and are not yet on kore
-`main`, so with the local `go.work` overlay kordinate only builds when the
-sibling kore checkout is on that branch:
-
-```sh
-cd ../kore && git checkout feat/component-library-and-vision
-```
-
-Once that branch merges, this note can go. (A kore-core refactor making the
-kernel AI panel a built-in is in flight on `main` in parallel; the two touch
-different files — `ai/`+`web/` versus `kore.go`/`module.go`/`run.go` — so they
-coexist and this branch rebases cleanly.)
-
 ## Local dev
 
 Runs in the shared Kosmos dev stack on port **3008**, with SSO via kontrol:

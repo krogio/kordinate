@@ -22,6 +22,7 @@ import (
 	"github.com/krogio/kore/modules/auditui"
 	"github.com/krogio/kore/modules/feedback"
 	"github.com/krogio/kore/modules/groupsadmin"
+	"github.com/krogio/kore/modules/kernel"
 	"github.com/krogio/kore/modules/licencepage"
 	"github.com/krogio/kore/modules/notifications"
 	"github.com/krogio/kore/modules/profile"
@@ -58,6 +59,7 @@ func main() {
 		profile.New(d),
 		notifications.New(d),
 		feedback.New(d),
+		kernel.New(d),
 	)
 	if err := app.Run(); err != nil {
 		panic(err)
