@@ -13,8 +13,22 @@
   </div>
 </div>
 
-{{/* ---------- Identity header ---------- */}}
-<div class="card">
+{{/* kore's single-column record layout. Sections drag-reorder and collapse,
+     persisted per entity type in localStorage — an activations agent wants the
+     case on top, a CS agent wants activity. Single column because the kernel AI
+     drawer takes 380px when open, which crushes any side rail. */}}
+{{template "record-open" dict "Kind" "customer" "Reset" true}}
+
+{{template "rec-section-open" dict "Key" "controls" "Title" "Actions"}}
+  <div class="rec-controls">
+    {{if .CanEdit}}<a class="btn btn-sm" href="/kordinate/customer?guid={{$guid}}&amp;edit=1">{{icon "edit"}} Edit customer</a>{{end}}
+    {{if .CanViewDocuments}}<a class="btn btn-sm btn-ghost" href="/kordinate/documents?guid={{$guid}}">{{icon "file"}} Documents</a>{{end}}
+    {{if .Case}}<a class="btn btn-sm btn-ghost" href="/kordinate/onboarding/case?id={{.Case.ID}}">{{icon "clipboard"}} Full case</a>{{end}}
+    <a class="btn btn-sm btn-ghost" href="/kordinate">{{icon "users"}} Search</a>
+  </div>
+{{template "rec-section-close" .}}
+
+{{template "rec-section-open" dict "Key" "metadata" "Title" "Identity"}}
   <div class="kdn-idhead">
     <div style="flex:1 1 320px;">
       <div class="kdn-idfacts">
@@ -80,28 +94,24 @@
     {{end}}
   </div>
   {{end}}
-</div>
+{{template "rec-section-close" .}}
 
 {{/* ---------- Balances strip ----------
      Fetched asynchronously because UML fans out to three products behind a VPN.
      The server-rendered fallback is a loading state; kordinate.js replaces it. */}}
 {{if .CanViewFinancial}}
-<div class="card">
-  <h2>Balances</h2>
+{{template "rec-section-open" dict "Key" "balances" "Title" "Balances"}}
   <div id="kdn-balances" class="kdn-balances" data-guid="{{$guid}}" data-msisdn="{{.Customer.MSISDN}}"
        aria-live="polite" aria-busy="true">
     <p class="field-hint" style="grid-column:1/-1; margin:0;">Loading balances…</p>
   </div>
   <noscript><p class="field-hint">Balances need JavaScript — they are fetched per product so one slow service can't hold up the page.</p></noscript>
-</div>
+{{template "rec-section-close" .}}
 {{end}}
 
 {{/* ---------- Onboarding case ---------- */}}
-<div class="card">
-  <h2 style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-    <span>Onboarding case</span>
-    {{if .Case}}<a class="btn btn-sm btn-ghost" href="/kordinate/onboarding/case?id={{.Case.ID}}">Full case →</a>{{end}}
-  </h2>
+{{template "rec-section-open" dict "Key" "case" "Title" "Onboarding case"}}
+  {{if .Case}}<div class="rec-controls" style="justify-content:flex-end; margin-bottom:10px;"><a class="btn btn-sm btn-ghost" href="/kordinate/onboarding/case?id={{.Case.ID}}">Full case →</a></div>{{end}}
 
   {{if .Case}}
   <p style="margin:0 0 12px;">
@@ -175,12 +185,11 @@
     {{end}}
   </div>
   {{end}}
-</div>
+{{template "rec-section-close" .}}
 
 {{/* ---------- Documents ---------- */}}
 {{if .CanViewDocuments}}
-<div class="card" style="padding:0;">
-  <div style="padding:14px 20px;"><h2 style="margin:0;">Documents</h2></div>
+{{template "rec-section-open" dict "Key" "documents" "Title" "Documents"}}
   {{if .Documents}}
   <div class="table-wrap">
     <table>
@@ -235,18 +244,15 @@
     <button type="submit" class="btn btn-sm btn-primary">{{icon "plus"}} Upload document</button>
   </form>
   {{end}}
-</div>
+{{template "rec-section-close" .}}
 {{end}}
 
 {{/* ---------- Stitched activity timeline ----------
      Lazy-loaded: six services fan out concurrently server-side, but the page
      itself must paint before that returns. Partial failure is expected — the
      banner naming the dead sources is rendered by kordinate.js. */}}
-<div class="card">
-  <h2 style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-    <span>Activity</span>
-    <span class="field-hint">Every service's events, newest first.</span>
-  </h2>
+{{template "rec-section-open" dict "Key" "activity" "Title" "Activity"}}
+  <p class="field-hint" style="margin:0 0 10px;">Every service's events, newest first.</p>
 
   <div id="kdn-timeline-degraded" role="alert" hidden></div>
   <div id="kdn-timeline" data-guid="{{$guid}}" data-from="{{.From}}" data-to="{{.To}}"
@@ -256,11 +262,10 @@
   <noscript>
     <p class="field-hint">The timeline is fetched asynchronously and needs JavaScript. Without it, use the per-service sections above.</p>
   </noscript>
-</div>
+{{template "rec-section-close" .}}
 
 {{/* ---------- Notes ---------- */}}
-<div class="card">
-  <h2>Notes</h2>
+{{template "rec-section-open" dict "Key" "notes" "Title" "Notes"}}
   <form method="post" action="/kordinate/customer/note" style="margin-bottom:18px;">
     {{.CSRFField}}
     <input type="hidden" name="guid" value="{{$guid}}">
@@ -301,7 +306,9 @@
   {{else}}
   <p class="field-hint">No notes yet. The first note on a customer is usually the most useful one.</p>
   {{end}}
-</div>
+{{template "rec-section-close" .}}
 
 <script src="/kordinate/static/kordinate.js"></script>
+{{template "record-close" .}}
+
 {{end}}
