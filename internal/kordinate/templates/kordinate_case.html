@@ -1,0 +1,157 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>
+      {{if .Case.DisplayName}}{{.Case.DisplayName}}{{else}}Case {{.Case.ID}}{{end}}
+      {{template "kdn-state-badge" .Case.State}}
+    </h1>
+    <p class="field-hint">{{.Case.State.Description}}</p>
+  </div>
+  <div class="row-actions">
+    <a class="btn btn-sm" href="/kordinate/customer?guid={{.Case.MMGuid}}">Customer 360 →</a>
+    <a class="btn btn-sm btn-ghost" href="/kordinate/onboarding">← Queue</a>
+  </div>
+</div>
+
+{{if .Case.Overdue .Now}}
+<div class="flash flash-error">
+  <strong>SLA breached.</strong> This case was due {{.Case.SLADueAt.Format "2 Jan 2006 15:04"}} — {{kdnRelTime .Case.SLADueAt}}.
+</div>
+{{end}}
+
+<div class="card">
+  <div class="kdn-idfacts">
+    <dl class="kdn-fact"><dt>Phone number</dt><dd class="kdn-mono">{{if .Case.MSISDN}}{{.Case.MSISDN}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+    <dl class="kdn-fact"><dt>Owning team</dt><dd>{{if .Case.State.Owner}}{{.Case.State.Owner}}{{else}}<span class="kdn-dash">none</span>{{end}}</dd></dl>
+    <dl class="kdn-fact"><dt>Assignee</dt><dd>{{if .Case.Assignee}}{{.Case.Assignee}}{{else}}<span class="kdn-dash">unassigned</span>{{end}}</dd></dl>
+    <dl class="kdn-fact"><dt>Opened</dt><dd>{{.Case.OpenedAt.Format "2 Jan 2006 15:04"}} <span class="field-hint">by {{.Case.CreatedBy}}</span></dd></dl>
+    <dl class="kdn-fact">
+      <dt>SLA</dt>
+      <dd>
+        {{if .Case.ClosedAt}}<span class="kdn-dash">closed {{.Case.ClosedAt.Format "2 Jan 2006 15:04"}}</span>
+        {{else if .Case.SLADueAt}}
+          {{if .Case.Overdue $.Now}}<span class="kdn-sla-breach">overdue</span>{{else}}<span class="kdn-sla-soon">due {{.Case.SLADueAt.Format "2 Jan 15:04"}}</span>{{end}}
+        {{else}}<span class="kdn-dash">no clock — waiting on the customer</span>{{end}}
+      </dd>
+    </dl>
+  </div>
+
+  {{if and .CanAssign (not .Case.ClosedAt)}}
+  <form method="post" action="/kordinate/onboarding/assign" class="inline-form"
+        style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+    {{.CSRFField}}
+    <input type="hidden" name="id" value="{{.Case.ID}}">
+    <label for="kdn-case-assignee" style="margin:0;">Assignee</label>
+    <select name="assignee" id="kdn-case-assignee" style="width:auto;">
+      <option value="">— unassign —</option>
+      <option value="{{.Me}}"{{if eq .Case.Assignee .Me}} selected{{end}}>me ({{.Me}})</option>
+      {{range .Assignees}}
+      {{if ne . $.Me}}<option value="{{.}}"{{if eq . $.Case.Assignee}} selected{{end}}>{{.}}</option>{{end}}
+      {{end}}
+    </select>
+    <button type="submit" class="btn btn-sm">Save</button>
+  </form>
+  {{end}}
+</div>
+
+{{/* ---------- Outstanding documents ---------- */}}
+<div class="card">
+  <h2>Outstanding requirements</h2>
+  {{if .Outstanding}}
+  <ul class="kdn-reqs">
+    {{range .Outstanding}}
+    <li>
+      {{if .Satisfied}}<span class="ok">{{icon "check"}}</span>{{else}}<span class="blocked">{{icon "clock"}}</span>{{end}}
+      <span><strong>{{.Label}}</strong> — {{.Status}}</span>
+    </li>
+    {{end}}
+  </ul>
+  <p class="field-hint" style="margin-top:12px;">
+    An identity requirement is satisfied by <em>any</em> approved document that proves identity — SA ID, passport, or asylum permit.
+  </p>
+  {{else}}
+  <p class="field-hint">Nothing outstanding in {{kdnState .Case.State}}.</p>
+  {{end}}
+
+  {{if .Documents}}
+  <div class="table-wrap" style="margin-top:14px;">
+    <table>
+      <thead><tr><th scope="col">Document</th><th scope="col">Status</th><th scope="col">Expires</th><th scope="col"></th></tr></thead>
+      <tbody>
+        {{range .Documents}}
+        <tr>
+          <th scope="row" style="font-weight:600;">{{kdnDocLabel .DocumentType}}</th>
+          <td>{{template "kdn-doc-badge" .DocumentStatus}}</td>
+          <td class="field-hint">{{if .ExpiryDate}}{{.ExpiryDate}}{{else}}<span class="kdn-dash">no expiry</span>{{end}}</td>
+          <td class="actions">
+            {{if .MediaID}}<a class="btn btn-sm" href="/kordinate/documents/view?guid={{$.Case.MMGuid}}&amp;media={{.MediaID}}">Review</a>{{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{end}}
+</div>
+
+{{/* ---------- Next-state actions ---------- */}}
+{{if and .CanAdvance (not .Case.ClosedAt)}}
+<div class="card">
+  <h2>Move the case</h2>
+  {{if .NextStates}}
+  <form method="post" action="/kordinate/onboarding/move">
+    {{.CSRFField}}
+    <input type="hidden" name="id" value="{{.Case.ID}}">
+    <div class="form-group" style="max-width:100%;">
+      <label for="kdn-case-note">Note <span class="field-hint">(recorded on the transition — this is the audit trail)</span></label>
+      <textarea name="note" id="kdn-case-note" rows="2" placeholder="Why this move? What did you check?"></textarea>
+    </div>
+    <div class="row-actions">
+      {{range .NextStates}}
+      <button type="submit" name="to" value="{{.}}"
+        class="btn{{if eq (printf "%s" .) "REJECTED"}} btn-danger{{else if or (eq (printf "%s" .) "APPROVED") (eq (printf "%s" .) "ACTIVE")}} btn-primary{{end}}"
+        {{if eq (printf "%s" .) "REJECTED"}}data-confirm="Reject this application? This is a terminal state — the case closes and a new application would need a new case." data-confirm-danger{{end}}
+        {{if eq (printf "%s" .) "ABANDONED"}}data-confirm="Mark this application abandoned? This closes the case."{{end}}>
+        → {{kdnState .}}
+      </button>
+      {{end}}
+    </div>
+  </form>
+  <p class="field-hint" style="margin-top:12px;">
+    Only legal transitions out of {{kdnState .Case.State}} are shown. Requirements gate forward moves; asking for more information or declining is always available.
+  </p>
+  {{else}}
+  <p class="field-hint">{{kdnState .Case.State}} is terminal — there is nowhere left to move this case.</p>
+  {{end}}
+</div>
+{{end}}
+
+{{/* ---------- Transition history ---------- */}}
+<div class="card">
+  <h2>History</h2>
+  {{if .History}}
+  <div>
+    {{range .History}}
+    <div class="kdn-ev">
+      <div class="kdn-ev-icon">{{icon "split"}}</div>
+      <div>
+        <div class="kdn-ev-title">
+          {{if .FromState}}{{kdnState .FromState}} → {{end}}{{kdnState .ToState}}
+        </div>
+        <div class="kdn-ev-meta">
+          <span>{{.Actor}}</span>
+          <span>{{.At.Format "2 Jan 2006 15:04"}}</span>
+          {{if .Note}}<span>{{.Note}}</span>{{end}}
+        </div>
+      </div>
+      <div></div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="field-hint">No transitions recorded.</p>
+  {{end}}
+</div>
+{{end}}

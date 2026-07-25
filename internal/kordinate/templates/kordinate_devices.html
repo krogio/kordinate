@@ -1,0 +1,150 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>Device blocker</h1>
+    <p class="field-hint">Fraud containment. Blocking a device stops the app on that handset; suspending its linked customers stops those people transacting anywhere.</p>
+  </div>
+  <a class="btn btn-sm btn-ghost" href="/kordinate">Customer search</a>
+</div>
+
+<div class="card">
+  <form method="get" action="/kordinate/devices" class="inline-form">
+    <div class="form-group" style="margin-bottom:0; flex:1 1 320px;">
+      <label for="kdn-device-id">Device ID</label>
+      <input type="text" name="device" id="kdn-device-id" value="{{.Filter.DeviceID}}" autocomplete="off"
+             placeholder="device identifier from the app or a transaction record">
+    </div>
+    <button type="submit" class="btn btn-primary">{{icon "view"}} Look up</button>
+  </form>
+</div>
+
+{{if .Device}}
+<div class="card">
+  <h2 style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <span class="kdn-mono">{{.Device.DeviceID}}</span>
+    {{if eq (printf "%s" .Device.DeviceStatus) "BLOCKED"}}<span class="badge badge-danger">Blocked</span>
+    {{else}}<span class="badge badge-ok">Active</span>{{end}}
+  </h2>
+  <div class="kdn-idfacts">
+    <dl class="kdn-fact"><dt>First seen</dt><dd>{{if .Device.FirstSeen}}{{.Device.FirstSeen}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+    <dl class="kdn-fact"><dt>Last seen</dt><dd>{{if .Device.LastSeen}}{{.Device.LastSeen}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+    <dl class="kdn-fact"><dt>Linked customers</dt><dd>{{len .Device.LinkedCustomers}}</dd></dl>
+  </div>
+
+  {{if .CanBlock}}
+  <div class="row-actions" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+    <form method="post" action="/kordinate/devices/status" class="inline-form">
+      {{.CSRFField}}
+      <input type="hidden" name="device" value="{{.Device.DeviceID}}">
+      <input type="hidden" name="status" value="{{if eq (printf "%s" .Device.DeviceStatus) "BLOCKED"}}ACTIVE{{else}}BLOCKED{{end}}">
+      <label for="kdn-dev-reason" style="margin:0;">Reason</label>
+      <input type="text" name="reason" id="kdn-dev-reason" placeholder="Reason (required)" required autocomplete="off" style="flex:0 0 240px;">
+      {{if eq (printf "%s" .Device.DeviceStatus) "BLOCKED"}}
+      <button type="submit" class="btn btn-sm" data-confirm="Unblock this device? The app will work on it again.">Unblock device</button>
+      {{else}}
+      <button type="submit" class="btn btn-sm btn-danger"
+        data-confirm="Block this device? The app stops working on this handset. The linked customers are NOT suspended by this action."
+        data-confirm-danger>{{icon "shield"}} Block device</button>
+      {{end}}
+    </form>
+  </div>
+  {{end}}
+</div>
+
+{{/* ---------- Linked customers ---------- */}}
+<div class="card" style="padding:0;">
+  <div style="padding:14px 20px;">
+    <h2 style="margin:0;">Linked customers ({{len .Device.LinkedCustomers}})</h2>
+  </div>
+  {{if .Device.LinkedCustomers}}
+  <div class="table-wrap">
+    <table>
+      <caption class="field-hint" style="caption-side:bottom; text-align:left; padding:8px 20px;">
+        Several customers on one device is normal — shared handsets and family phones are common. It is a signal, not proof of fraud.
+      </caption>
+      <thead>
+        <tr><th scope="col">Customer</th><th scope="col">GUID</th><th scope="col">Status</th><th scope="col"></th></tr>
+      </thead>
+      <tbody>
+        {{range .Linked}}
+        <tr>
+          <th scope="row" style="font-weight:600;">
+            <a href="/kordinate/customer?guid={{.MMGlobalCustomerID}}">{{.FullName}}</a>
+            {{if .MSISDN}}<div class="kdn-mono text-muted" style="font-weight:400;">{{.MSISDN}}</div>{{end}}
+          </th>
+          <td class="kdn-mono text-muted">{{.MMGlobalCustomerID}}</td>
+          <td>{{template "kdn-status-badge" .Status}}</td>
+          <td class="actions"><a class="btn btn-sm" href="/kordinate/customer?guid={{.MMGlobalCustomerID}}">Open</a></td>
+        </tr>
+        {{end}}
+        {{/* Fall back to bare GUIDs when the customer service couldn't be
+             resolved — a dead lookup must not hide who is about to be suspended. */}}
+        {{if not .Linked}}
+        {{range .Device.LinkedCustomers}}
+        <tr>
+          <th scope="row" class="kdn-mono" style="font-weight:600;">{{.}}</th>
+          <td class="kdn-mono text-muted">{{.}}</td>
+          <td><span class="kdn-dash">lookup unavailable</span></td>
+          <td class="actions"><a class="btn btn-sm" href="/kordinate/customer?guid={{.}}">Open</a></td>
+        </tr>
+        {{end}}
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <p class="field-hint" style="padding:0 20px 16px;">No customers linked to this device.</p>
+  {{end}}
+</div>
+
+{{/* ---------- Bulk suspend ---------- */}}
+{{if .CanBulkSuspend}}
+{{if .Device.LinkedCustomers}}
+<div class="card" style="border-color:color-mix(in srgb, var(--error) 45%, var(--border));">
+  <h2>Bulk suspend linked customers</h2>
+  <div class="flash flash-error">
+    <strong>Blast radius: {{len .Device.LinkedCustomers}} customer{{if ne (len .Device.LinkedCustomers) 1}}s{{end}}.</strong>
+    Every one of them stops being able to transact, receive money, or use their card — immediately and without notice.
+    Shared handsets are common, so some of these people are almost certainly legitimate.
+    Reversing this means suspending, then reinstating, each customer one at a time.
+  </div>
+  <form method="post" action="/kordinate/devices/bulk-suspend">
+    {{.CSRFField}}
+    <input type="hidden" name="device" value="{{.Device.DeviceID}}">
+    <div class="form-group" style="max-width:100%;">
+      <label for="kdn-bulk-reason">Reason <span class="req">*</span></label>
+      <input type="text" name="reason" id="kdn-bulk-reason" required autocomplete="off"
+             placeholder="e.g. confirmed account-takeover ring, case FRD-3391">
+      <span class="field-hint">Recorded against every customer suspended by this action.</span>
+    </div>
+    <label class="checkbox-label" style="margin-bottom:12px;">
+      <input type="checkbox" name="acknowledged" value="1" required>
+      I have confirmed fraud on this device and accept that {{len .Device.LinkedCustomers}} customers will be locked out.
+    </label>
+    <button type="submit" class="btn btn-danger"
+      data-confirm="Suspend all {{len .Device.LinkedCustomers}} customers linked to this device? Each must be reinstated individually."
+      data-confirm-danger
+      data-confirm-ok="Suspend {{len .Device.LinkedCustomers}} customers">{{icon "shield"}} Suspend {{len .Device.LinkedCustomers}} customers</button>
+  </form>
+</div>
+{{end}}
+{{end}}
+
+{{else if .Filter.DeviceID}}
+<div class="card">
+  <div class="empty-state">
+    <p><strong>No device with that ID.</strong></p>
+    <p class="field-hint">Device IDs come from the app session or a transaction record — check for a truncated copy-paste.</p>
+  </div>
+</div>
+{{else}}
+<div class="card">
+  <div class="empty-state">
+    <p><strong>Look up a device to begin.</strong></p>
+    <p class="field-hint">You can also reach a device from the Devices section of a customer's activity timeline.</p>
+  </div>
+</div>
+{{end}}
+{{end}}

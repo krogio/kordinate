@@ -1,0 +1,101 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>New customer</h1>
+    <p class="field-hint">Registers the customer in the customer service and opens an onboarding case. The customer still has to submit FICA documents before they can transact.</p>
+  </div>
+  <a class="btn btn-sm btn-ghost" href="/kordinate">← Search</a>
+</div>
+
+{{if .Error}}<div class="flash flash-error">{{.Error}}</div>{{end}}
+
+<div class="card">
+  <form method="post" action="/kordinate/customer/create">
+    {{.CSRFField}}
+
+    <h2>Identity</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-msisdn">Phone number <span class="req">*</span></label>
+        <input type="text" name="msisdn" id="kdn-msisdn" value="{{.Form.msisdn}}" required inputmode="tel" autocomplete="off"
+               placeholder="0821234567">
+        <span class="field-hint">This is the identity every downstream service keys off. Check it twice.</span>
+      </div>
+      <div class="form-group">
+        <label for="kdn-first">First name <span class="req">*</span></label>
+        <input type="text" name="first_name" id="kdn-first" value="{{.Form.first_name}}" required autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kdn-last">Last name <span class="req">*</span></label>
+        <input type="text" name="last_name" id="kdn-last" value="{{.Form.last_name}}" required autocomplete="off">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-dob">Date of birth <span class="req">*</span></label>
+        <input type="date" name="date_of_birth" id="kdn-dob" value="{{.Form.date_of_birth}}" required>
+      </div>
+      <div class="form-group">
+        <label for="kdn-gender">Gender</label>
+        <select name="gender" id="kdn-gender">
+          <option value="">Not stated</option>
+          <option value="MALE"{{if eq .Form.gender "MALE"}} selected{{end}}>Male</option>
+          <option value="FEMALE"{{if eq .Form.gender "FEMALE"}} selected{{end}}>Female</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="kdn-email">Email address</label>
+        <input type="email" name="email" id="kdn-email" value="{{.Form.email}}" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-idtype">Identification type</label>
+        <select name="id_type" id="kdn-idtype">
+          {{range .IDTypes}}<option value="{{.}}"{{if eq $.Form.id_type .}} selected{{end}}>{{kdnDocLabel .}}</option>{{end}}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="kdn-idnum">Identification number</label>
+        <input type="text" name="id_number" id="kdn-idnum" value="{{.Form.id_number}}" autocomplete="off">
+      </div>
+    </div>
+
+    <h2 style="margin-top:22px;">Address</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-street">Street address</label>
+        <input type="text" name="street_address" id="kdn-street" value="{{.Form.street_address}}" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kdn-suburb">Suburb</label>
+        <input type="text" name="street_suburb" id="kdn-suburb" value="{{.Form.street_suburb}}" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-city">City</label>
+        <input type="text" name="street_city" id="kdn-city" value="{{.Form.street_city}}" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kdn-province">Province</label>
+        <input type="text" name="street_province" id="kdn-province" value="{{.Form.street_province}}" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kdn-postal">Postal code</label>
+        <input type="text" name="postal_code" id="kdn-postal" value="{{.Form.postal_code}}" autocomplete="off" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="row-actions" style="margin-top:8px;">
+      <button type="submit" class="btn btn-primary">{{icon "plus"}} Create customer</button>
+      <a class="btn btn-ghost" href="/kordinate">Cancel</a>
+    </div>
+    <p class="field-hint" style="margin-top:12px;">
+      Search first. A duplicate customer record splits a person's transaction history across two GUIDs and takes a data fix to merge.
+    </p>
+  </form>
+</div>
+{{end}}

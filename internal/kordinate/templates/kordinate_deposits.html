@@ -1,0 +1,126 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>Deposits &amp; EFT</h1>
+    <p class="field-hint">Inbound EFT, branch and ATM deposits that did not match a customer automatically. Every action here moves real money or real credit.</p>
+  </div>
+  <a class="btn btn-sm btn-ghost" href="/kordinate">Customer search</a>
+</div>
+
+<div class="card">
+  <form method="get" action="/kordinate/deposits" class="kdn-filters">
+    <div class="form-group">
+      <label for="kdn-f-ref">Reference</label>
+      <input type="text" name="reference" id="kdn-f-ref" value="{{.Filter.Reference}}" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-bank">Bank</label>
+      <input type="text" name="bank" id="kdn-f-bank" value="{{.Filter.Bank}}" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-from">From</label>
+      <input type="date" name="from" id="kdn-f-from" value="{{.Filter.From}}">
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-to">To</label>
+      <input type="date" name="to" id="kdn-f-to" value="{{.Filter.To}}">
+    </div>
+    <div class="row-actions">
+      <button type="submit" class="btn btn-sm btn-primary">Search</button>
+      <a class="btn btn-sm btn-ghost" href="/kordinate/deposits">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:0;">
+  <div style="padding:14px 20px;">
+    <h2 style="margin:0;">{{len .Deposits}} deposit{{if ne (len .Deposits) 1}}s{{end}} awaiting handling</h2>
+  </div>
+  {{if .Deposits}}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Received</th>
+          <th scope="col">Reference</th>
+          <th scope="col">Bank</th>
+          <th scope="col">Channel</th>
+          <th scope="col" class="kdn-num">Amount</th>
+          <th scope="col">Outcome</th>
+          <th scope="col">Customer</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Deposits}}
+        <tr>
+          <td class="field-hint" style="white-space:nowrap;">{{.DateReceived.Format "2006-01-02 15:04"}}</td>
+          <th scope="row" class="kdn-mono" style="font-weight:600;">{{.OriginalReference}}</th>
+          <td>{{if .Bank}}{{.Bank}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td><span class="pill">{{.PaymentChannel}}</span></td>
+          <td class="kdn-num">{{zar .Amount}}</td>
+          <td>
+            {{if eq .ProcessOutcome "MANUAL_INTERVENTION_REQUIRED"}}<span class="badge badge-warn">Needs handling</span>
+            {{else if eq .ProcessOutcome "PENDING_PROCESSING"}}<span class="badge">Pending</span>
+            {{else if or (eq .ProcessOutcome "ORDER_PAID") (eq .ProcessOutcome "MANUAL_ORDER_PAID")}}<span class="badge badge-ok">Applied to order</span>
+            {{else if eq .ProcessOutcome "WALLET_ORDER_CREATED"}}<span class="badge badge-ok">Credited to wallet</span>
+            {{else if eq .ProcessOutcome "PURGED"}}<span class="badge">Purged</span>
+            {{else}}<span class="badge">{{.ProcessOutcome}}</span>{{end}}
+          </td>
+          <td>
+            {{if .MMGlobalCustomerID}}
+            <a class="kdn-mono" href="/kordinate/customer?guid={{.MMGlobalCustomerID}}">{{.MMGlobalCustomerID}}</a>
+            {{else}}
+            <span class="kdn-dash">unmatched</span>
+            {{end}}
+          </td>
+          <td>
+            <div class="row-actions">
+              {{if $.CanAssign}}
+              <form method="post" action="/kordinate/deposits/assign" class="inline-form">
+                {{$.CSRFField}}
+                <input type="hidden" name="id" value="{{.EFTNotificationID}}">
+                <label for="kdn-dep-guid-{{.EFTNotificationID}}" style="position:absolute; left:-9999px;">Customer GUID for deposit {{.OriginalReference}}</label>
+                <input type="text" name="guid" id="kdn-dep-guid-{{.EFTNotificationID}}" placeholder="customer GUID"
+                       style="flex:0 0 190px;" autocomplete="off" required>
+                <button type="submit" class="btn btn-sm"
+                  data-confirm="Assign {{zar .Amount}} to this customer? The credit is applied immediately.">Assign</button>
+              </form>
+              {{end}}
+              {{if $.CanMarkSuccess}}
+              <form method="post" action="/kordinate/deposits/success">
+                {{$.CSRFField}}
+                <input type="hidden" name="id" value="{{.EFTNotificationID}}">
+                <button type="submit" class="btn btn-sm"
+                  data-confirm="Mark {{zar .Amount}} ({{.OriginalReference}}) as successfully processed?">Mark success</button>
+              </form>
+              {{end}}
+              {{if $.CanRefund}}
+              <form method="post" action="/kordinate/deposits/refund" class="inline-form">
+                {{$.CSRFField}}
+                <input type="hidden" name="id" value="{{.EFTNotificationID}}">
+                <label for="kdn-dep-reason-{{.EFTNotificationID}}" style="position:absolute; left:-9999px;">Refund reason for deposit {{.OriginalReference}}</label>
+                <input type="text" name="reason" id="kdn-dep-reason-{{.EFTNotificationID}}" placeholder="refund reason"
+                       style="flex:0 0 170px;" autocomplete="off" required>
+                <button type="submit" class="btn btn-sm btn-danger"
+                  data-confirm="Refund {{zar .Amount}} to source? This moves real money and cannot be reversed from here."
+                  data-confirm-danger>Refund</button>
+              </form>
+              {{end}}
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <p><strong>No deposits need handling.</strong></p>
+    <p class="field-hint">Deposits appear here when the reference doesn't resolve to a customer. A clear queue means everything matched automatically.</p>
+  </div>
+  {{end}}
+</div>
+{{end}}

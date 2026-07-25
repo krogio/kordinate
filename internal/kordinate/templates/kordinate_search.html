@@ -1,0 +1,115 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>Customer search</h1>
+    <p class="field-hint">Find a customer by phone number, name, ID number or GUID. Every record you open is recorded in the access log.</p>
+  </div>
+  {{if .CanCreate}}<a class="btn btn-sm btn-primary" href="/kordinate/customer/new">{{icon "plus"}} New customer</a>{{end}}
+</div>
+
+<div class="card">
+  <form method="get" action="/kordinate" role="search">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-msisdn">Phone number</label>
+        <input type="text" name="msisdn" id="kdn-msisdn" value="{{.Query.MSISDN}}" placeholder="0821234567" autocomplete="off" inputmode="tel">
+      </div>
+      <div class="form-group">
+        <label for="kdn-first">First name</label>
+        <input type="text" name="first_name" id="kdn-first" value="{{.Query.FirstName}}" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kdn-last">Last name</label>
+        <input type="text" name="last_name" id="kdn-last" value="{{.Query.LastName}}" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-idnum">ID / passport number</label>
+        <input type="text" name="id_number" id="kdn-idnum" value="{{.Query.IDNumber}}" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kdn-email">Email address</label>
+        <input type="email" name="email" id="kdn-email" value="{{.Query.EmailAddress}}" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kdn-guid">Customer GUID</label>
+        <input type="text" name="guid" id="kdn-guid" value="{{.Query.MMGlobalCustomerID}}" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-status">Status</label>
+        <select name="status" id="kdn-status">
+          <option value="">Any status</option>
+          {{range .Statuses}}
+          <option value="{{.}}"{{if eq (printf "%s" .) (printf "%s" $.Query.Status)}} selected{{end}}>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
+    </div>
+    <div class="row-actions">
+      <button type="submit" class="btn btn-primary">{{icon "view"}} Search</button>
+      {{if .Searched}}<a class="btn btn-ghost" href="/kordinate">Clear</a>{{end}}
+    </div>
+  </form>
+</div>
+
+{{if .Results}}
+<div class="card" style="padding:0;">
+  <div style="padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <h2 style="margin:0;">{{.Total}} match{{if ne .Total 1}}es{{end}}</h2>
+    {{if gt .Total (len .Results)}}<span class="field-hint">Showing the first {{len .Results}}. Narrow the search to see the rest.</span>{{end}}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <caption class="field-hint" style="caption-side:bottom; text-align:left; padding:8px 20px;">Customers matching your search.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Phone number</th>
+          <th scope="col">Status</th>
+          <th scope="col">Last activity</th>
+          <th scope="col"><span class="text-muted">GUID</span></th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Results}}
+        <tr>
+          <th scope="row" style="font-weight:600;">
+            <a href="/kordinate/customer?guid={{.MMGlobalCustomerID}}">{{.FullName}}</a>
+          </th>
+          <td class="kdn-mono">{{if .MSISDN}}{{.MSISDN}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td>{{template "kdn-status-badge" .Status}}</td>
+          <td class="field-hint">{{if .DateModified}}{{.DateModified}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="kdn-mono text-muted">{{.MMGlobalCustomerID}}</td>
+          <td class="actions"><a class="btn btn-sm" href="/kordinate/customer?guid={{.MMGlobalCustomerID}}">Open</a></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{else if .Searched}}
+<div class="card">
+  <div class="empty-state">
+    <p><strong>No customers matched.</strong></p>
+    <p class="field-hint">
+      A customer who changed SIM is still findable by their previous number, so try the old one.
+      Names in the legacy book are often misspelled — search on the ID number or a partial surname instead.
+    </p>
+    {{if .CanCreate}}<a class="btn btn-sm btn-primary" href="/kordinate/customer/new">{{icon "plus"}} Register this customer</a>{{end}}
+  </div>
+</div>
+{{else}}
+<div class="card">
+  <div class="empty-state">
+    <p><strong>Search for a customer to begin.</strong></p>
+    <p class="field-hint">The phone number is the fastest route — it is the identity every service keys off.</p>
+  </div>
+</div>
+{{end}}
+{{end}}

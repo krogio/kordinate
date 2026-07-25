@@ -1,0 +1,7 @@
+tmp/
+*.licence
+.env
+# Local multi-repo overlay used only for local `go build`/`go mod tidy` against
+# the sibling kore checkout — never committed (products build against pinned kore).
+go.work
+go.work.sum

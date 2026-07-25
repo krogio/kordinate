@@ -1,0 +1,124 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>Vouchers</h1>
+    <p class="field-hint">Issued vouchers and their redemption state. Cancelling an unredeemed voucher returns the value; a redeemed one cannot be cancelled.</p>
+  </div>
+  <a class="btn btn-sm btn-ghost" href="/kordinate">Customer search</a>
+</div>
+
+<div class="card">
+  <form method="get" action="/kordinate/vouchers" class="kdn-filters">
+    <div class="form-group">
+      <label for="kdn-f-code">Voucher code</label>
+      <input type="text" name="code" id="kdn-f-code" value="{{.Filter.Code}}" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-guid">Customer GUID</label>
+      <input type="text" name="guid" id="kdn-f-guid" value="{{.Filter.GUID}}" autocomplete="off">
+    </div>
+    <div class="row-actions">
+      <button type="submit" class="btn btn-sm btn-primary">Look up</button>
+      <a class="btn btn-sm btn-ghost" href="/kordinate/vouchers">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:0;">
+  <div style="padding:14px 20px;">
+    <h2 style="margin:0;">{{len .Vouchers}} voucher{{if ne (len .Vouchers) 1}}s{{end}}</h2>
+  </div>
+  {{if .Vouchers}}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Code</th>
+          <th scope="col" class="kdn-num">Amount</th>
+          <th scope="col">Status</th>
+          <th scope="col">Recipient</th>
+          <th scope="col">Issued</th>
+          <th scope="col">Redeemed</th>
+          <th scope="col">Expires</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Vouchers}}
+        <tr>
+          <th scope="row" class="kdn-mono" style="font-weight:600;">{{.Code}}</th>
+          <td class="kdn-num">{{if eq .Currency "ZAR"}}{{zar .Amount}}{{else}}{{.Currency}} {{.Amount}}{{end}}</td>
+          <td>
+            {{if eq .Status "REDEEMED"}}<span class="badge badge-ok">Redeemed</span>
+            {{else if eq .Status "CANCELLED"}}<span class="badge">Cancelled</span>
+            {{else if eq .Status "EXPIRED"}}<span class="badge badge-warn">Expired</span>
+            {{else}}<span class="badge badge-warn">{{.Status}}</span>{{end}}
+          </td>
+          <td>
+            {{if .Recipient.Name}}{{.Recipient.Name}}{{end}}
+            {{if .Recipient.MSISDN}}<div class="kdn-mono field-hint">{{.Recipient.MSISDN}}</div>{{end}}
+            {{if and (not .Recipient.Name) (not .Recipient.MSISDN)}}<span class="kdn-dash">—</span>{{end}}
+          </td>
+          <td class="field-hint" style="white-space:nowrap;">{{.CreatedAt.Format "2006-01-02"}}</td>
+          <td class="field-hint" style="white-space:nowrap;">{{if .RedeemedAt}}{{.RedeemedAt.Format "2006-01-02"}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="field-hint" style="white-space:nowrap;">{{if .ExpiresAt}}{{.ExpiresAt.Format "2006-01-02"}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="actions">
+            {{if and $.CanManage (not .RedeemedAt)}}
+            <form method="post" action="/kordinate/vouchers/cancel" class="inline-form">
+              {{$.CSRFField}}
+              <input type="hidden" name="code" value="{{.Code}}">
+              <label for="kdn-v-reason-{{.Code}}" style="position:absolute; left:-9999px;">Cancellation reason for {{.Code}}</label>
+              <input type="text" name="reason" id="kdn-v-reason-{{.Code}}" placeholder="reason" style="flex:0 0 150px;" autocomplete="off" required>
+              <button type="submit" class="btn btn-sm btn-danger"
+                data-confirm="Cancel voucher {{.Code}}?">Cancel</button>
+            </form>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <p><strong>No vouchers found.</strong></p>
+    <p class="field-hint">Look one up by code, or list a customer's vouchers by GUID.</p>
+  </div>
+  {{end}}
+</div>
+
+{{if .CanManage}}
+<div class="card">
+  <h2>Issue vouchers</h2>
+  <form method="post" action="/kordinate/vouchers/create">
+    {{.CSRFField}}
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-v-amount">Amount <span class="req">*</span></label>
+        <input type="number" name="amount" id="kdn-v-amount" step="0.01" min="0.01" required inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label for="kdn-v-currency">Currency</label>
+        <select name="currency" id="kdn-v-currency">
+          <option value="ZAR">ZAR</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="kdn-v-qty">Quantity <span class="req">*</span></label>
+        <input type="number" name="quantity" id="kdn-v-qty" value="1" min="1" max="500" required inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label for="kdn-v-product">Product</label>
+        <input type="text" name="product" id="kdn-v-product" placeholder="e.g. PROMO" autocomplete="off">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary"
+      data-confirm="Issue these vouchers? Each carries real value the moment it exists.">{{icon "plus"}} Issue</button>
+    <p class="field-hint" style="margin-top:12px;">Quantity × amount is issued in full. Check the total before submitting — issued vouchers must be cancelled one at a time.</p>
+  </form>
+</div>
+{{end}}
+{{end}}

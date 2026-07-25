@@ -1,0 +1,16 @@
+# Hot reload for kordinate (the customer operations console).
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/kordinate ./cmd/kordinate"
+bin = "./tmp/kordinate"
+include_ext = ["go", "html", "css", "js", "toml"]
+exclude_dir = ["tmp", ".git"]
+delay = 200
+
+[log]
+main_only = false
+
+[misc]
+clean_on_exit = true

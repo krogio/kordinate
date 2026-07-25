@@ -1,0 +1,93 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>Document review</h1>
+    <p class="field-hint">FICA documents awaiting a decision. AI vetting is advisory — the approve/reject decision, and its audit record, is yours.</p>
+  </div>
+  <a class="btn btn-sm btn-ghost" href="/kordinate">Customer search</a>
+</div>
+
+<div class="card">
+  <form method="get" action="/kordinate/documents" class="kdn-filters">
+    <div class="form-group">
+      <label for="kdn-f-status">Status</label>
+      <select name="status" id="kdn-f-status">
+        <option value="">Any</option>
+        <option value="PENDING"{{if eq .Filter.Status "PENDING"}} selected{{end}}>Pending</option>
+        <option value="APPROVED"{{if eq .Filter.Status "APPROVED"}} selected{{end}}>Approved</option>
+        <option value="REJECTED"{{if eq .Filter.Status "REJECTED"}} selected{{end}}>Rejected</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-doctype">Document type</label>
+      <select name="doc_type" id="kdn-f-doctype">
+        <option value="">Any</option>
+        {{range .DocTypes}}<option value="{{.}}"{{if eq $.Filter.DocType .}} selected{{end}}>{{kdnDocLabel .}}</option>{{end}}
+      </select>
+    </div>
+    <div class="row-actions">
+      <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+      <a class="btn btn-sm btn-ghost" href="/kordinate/documents">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:0;">
+  <div style="padding:14px 20px;">
+    <h2 style="margin:0;">{{len .Items}} document{{if ne (len .Items) 1}}s{{end}}</h2>
+  </div>
+  {{if .Items}}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Customer</th>
+          <th scope="col">Document</th>
+          <th scope="col">Status</th>
+          <th scope="col">AI verdict</th>
+          <th scope="col">Uploaded</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Items}}
+        <tr>
+          <th scope="row" style="font-weight:600;">
+            <a href="/kordinate/customer?guid={{.MMGuid}}">{{if .DisplayName}}{{.DisplayName}}{{else}}(unnamed){{end}}</a>
+            <div class="kdn-mono text-muted" style="font-weight:400;">{{.MSISDN}}</div>
+          </th>
+          <td>
+            {{kdnDocLabel .Doc.DocumentType}}
+            {{if .Doc.ExpiryDate}}<div class="field-hint">expires {{.Doc.ExpiryDate}}</div>{{end}}
+          </td>
+          <td>{{template "kdn-doc-badge" .Doc.DocumentStatus}}</td>
+          <td>
+            {{if .Vetting}}
+              {{template "kdn-verdict-badge" .Vetting.Verdict}}
+              <div class="field-hint">{{.Vetting.Summary}}</div>
+            {{else}}
+              <span class="kdn-dash">not vetted</span>
+            {{end}}
+          </td>
+          <td class="field-hint">{{if .Doc.TimeCreated}}{{.Doc.TimeCreated}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="actions">
+            <a class="btn btn-sm btn-primary" href="/kordinate/documents/view?guid={{.MMGuid}}&amp;media={{.Doc.MediaID}}">Review</a>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{if .Vetted}}{{template "kdn-advisory"}}{{end}}
+  {{else}}
+  <div class="empty-state">
+    <p><strong>Nothing to review.</strong></p>
+    <p class="field-hint">
+      {{if or .Filter.Status .Filter.DocType}}No documents match these filters.{{else}}The queue is clear — no documents are awaiting a decision.{{end}}
+    </p>
+  </div>
+  {{end}}
+</div>
+{{end}}

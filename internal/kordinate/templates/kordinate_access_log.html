@@ -1,0 +1,173 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>Access log</h1>
+    <p class="field-hint">Who looked at whose data. Reveals of unredacted identity documents are highlighted — those are the entries an audit asks about.</p>
+  </div>
+  <a class="btn btn-sm btn-ghost" href="/kordinate">Customer search</a>
+</div>
+
+{{if .Reveals}}
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-value">{{.Reveals}}</div>
+    <div class="stat-label">Unredacted reveals in this window</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">{{len .Entries}}</div>
+    <div class="stat-label">Entries shown</div>
+  </div>
+</div>
+{{end}}
+
+<div class="card">
+  <form method="get" action="/kordinate/access-log" class="kdn-filters">
+    <div class="form-group">
+      <label for="kdn-f-principal">Principal</label>
+      <input type="text" name="principal" id="kdn-f-principal" value="{{.Filter.Principal}}" autocomplete="off" placeholder="agent@mamamoney.co.za">
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-guid">Customer GUID</label>
+      <input type="text" name="guid" id="kdn-f-guid" value="{{.Filter.GUID}}" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-action">Action</label>
+      <select name="action" id="kdn-f-action">
+        <option value="">Any</option>
+        <option value="view_customer"{{if eq .Filter.Action "view_customer"}} selected{{end}}>Customer viewed</option>
+        <option value="view_document"{{if eq .Filter.Action "view_document"}} selected{{end}}>Document viewed</option>
+        <option value="reveal_unredacted"{{if eq .Filter.Action "reveal_unredacted"}} selected{{end}}>Unredacted reveal</option>
+        <option value="export"{{if eq .Filter.Action "export"}} selected{{end}}>Export</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-from">From</label>
+      <input type="date" name="from" id="kdn-f-from" value="{{.Filter.From}}">
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-to">To</label>
+      <input type="date" name="to" id="kdn-f-to" value="{{.Filter.To}}">
+    </div>
+    <div class="row-actions">
+      <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+      <a class="btn btn-sm btn-ghost" href="/kordinate/access-log">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:0;">
+  {{if .Entries}}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">When</th>
+          <th scope="col">Principal</th>
+          <th scope="col">Action</th>
+          <th scope="col">Customer</th>
+          <th scope="col">Target</th>
+          <th scope="col">Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Entries}}
+        <tr>
+          <td class="field-hint" style="white-space:nowrap;">{{.At.Format "2006-01-02 15:04:05"}}</td>
+          <th scope="row" style="font-weight:600;">{{.Principal}}</th>
+          <td>
+            {{if eq .Action "reveal_unredacted"}}<span class="badge badge-danger">Unredacted reveal</span>
+            {{else if eq .Action "export"}}<span class="badge badge-warn">Export</span>
+            {{else if eq .Action "view_document"}}<span class="badge">Document viewed</span>
+            {{else if eq .Action "view_customer"}}<span class="badge">Customer viewed</span>
+            {{else}}<span class="badge">{{.Action}}</span>{{end}}
+          </td>
+          <td class="kdn-mono"><a href="/kordinate/customer?guid={{.MMGuid}}">{{.MMGuid}}</a></td>
+          <td class="kdn-mono text-muted">{{if .Target}}{{.Target}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="field-hint">{{if .Reason}}{{.Reason}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <p><strong>No access entries in this window.</strong></p>
+    <p class="field-hint">
+      {{if or .Filter.Principal .Filter.GUID .Filter.Action}}Nothing matches these filters.{{else}}Nothing has been recorded yet for this period. An empty log for a busy day is itself worth investigating — access logging is best-effort at the call site.{{end}}
+    </p>
+  </div>
+  {{end}}
+</div>
+
+{{/* Who MAY reveal an unredacted document, alongside who has. This list is the
+     answer to the question claire-admin could only answer by grepping route
+     middleware. */}}
+<section class="card">
+  <h2 style="margin-top:0;">Unredacted document access</h2>
+  <p class="field-hint">
+    No role grants this, including admin — it exposes a customer's full ID number,
+    address and photograph. Grants are per user, expire by default, and every use
+    is recorded above.
+  </p>
+
+  {{if .RevealGrants}}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>User</th><th>Granted by</th><th>Reason</th><th>Expires</th><th></th></tr></thead>
+      <tbody>
+        {{range .RevealGrants}}
+        <tr>
+          <td>{{.Email}}</td>
+          <td>{{.GrantedBy}}</td>
+          <td>{{.Reason}}</td>
+          <td>
+            {{if .ExpiresAt}}
+              {{if .Active $.Now}}{{formatDate .ExpiresAt}}{{else}}{{statusBadge "expired"}}{{end}}
+            {{else}}{{statusBadgeAs "warn" "No expiry"}}{{end}}
+          </td>
+          <td class="row-actions">
+            <form method="POST" action="/kordinate/access-log/revoke-reveal" class="inline-form"
+                  data-confirm="Revoke unredacted-document access for {{.Email}}?" data-confirm-danger>
+              {{$.CSRFField}}
+              <input type="hidden" name="email" value="{{.Email}}">
+              <button type="submit" class="btn btn-sm btn-danger">Revoke</button>
+            </form>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">Nobody currently has unredacted-document access.</div>
+  {{end}}
+
+  <form method="POST" action="/kordinate/access-log/grant-reveal" style="margin-top:14px;">
+    {{.CSRFField}}
+    <div class="form-row">
+      <div class="form-group">
+        <label for="rg-email">User email <span class="req">*</span></label>
+        <input type="email" id="rg-email" name="email" required autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="rg-days">Expires in (days)</label>
+        <input type="number" id="rg-days" name="days" value="30" min="1" max="365">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="rg-reason">Reason <span class="req">*</span></label>
+      <input type="text" id="rg-reason" name="reason" required
+             placeholder="e.g. AML investigation REF-1042">
+      <p class="field-hint">Recorded against the grant and shown to auditors.</p>
+    </div>
+    <label class="checkbox-label">
+      <input type="checkbox" name="no_expiry" value="1"> Grant with no expiry
+    </label>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">Grant access</button>
+    </div>
+  </form>
+</section>
+{{end}}

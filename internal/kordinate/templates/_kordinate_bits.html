@@ -1,0 +1,150 @@
+{{/* Shared kordinate fragments. Parsed into every page by kore's renderer
+     (files named _*.html become partials on the base template).
+
+     These exist because the same three things — a customer status badge, an
+     onboarding state badge, a document status badge — appear on seven screens.
+     A badge that reads "suspended" in green on one page and red on another is
+     how an agent takes the wrong action. */}}
+
+{{/* Customer status badge. Pass an upstream.CustomerStatus. */}}
+{{define "kdn-status-badge"}}
+{{- if eq (printf "%s" .) "ACTIVE" -}}<span class="badge badge-ok">Active</span>
+{{- else if eq (printf "%s" .) "INACTIVE" -}}<span class="badge">Inactive</span>
+{{- else if eq (printf "%s" .) "SUSPENDED" -}}<span class="badge badge-warn">Suspended</span>
+{{- else if eq (printf "%s" .) "UNDERGOING_SCREENING" -}}<span class="badge badge-warn">Screening</span>
+{{- else if eq (printf "%s" .) "DUPLICATE" -}}<span class="badge badge-warn">Duplicate</span>
+{{- else if eq (printf "%s" .) "BLOCKED_POSITIVEMATCH" -}}<span class="badge badge-danger">Blocked — sanctions match</span>
+{{- else if eq (printf "%s" .) "PERMANENTLY_BLOCKED" -}}<span class="badge badge-danger">Permanently blocked</span>
+{{- else if . -}}<span class="badge">{{.}}</span>
+{{- else -}}<span class="badge">Unknown</span>
+{{- end -}}
+{{end}}
+
+{{/* Onboarding state badge. Pass a kordinate.State. */}}
+{{define "kdn-state-badge"}}
+{{- if eq (printf "%s" .) "ACTIVE" -}}<span class="badge badge-ok">{{kdnState .}}</span>
+{{- else if eq (printf "%s" .) "APPROVED" -}}<span class="badge badge-ok">{{kdnState .}}</span>
+{{- else if eq (printf "%s" .) "REJECTED" -}}<span class="badge badge-danger">{{kdnState .}}</span>
+{{- else if eq (printf "%s" .) "ABANDONED" -}}<span class="badge">{{kdnState .}}</span>
+{{- else if eq (printf "%s" .) "COMPLIANCE_REVIEW" -}}<span class="badge badge-warn">{{kdnState .}}</span>
+{{- else if eq (printf "%s" .) "INFO_REQUESTED" -}}<span class="badge badge-warn">{{kdnState .}}</span>
+{{- else -}}<span class="badge">{{kdnState .}}</span>
+{{- end -}}
+{{end}}
+
+{{/* Document approval badge. Pass the document-status string. */}}
+{{define "kdn-doc-badge"}}
+{{- if eq . "APPROVED" -}}<span class="badge badge-ok">Approved</span>
+{{- else if eq . "REJECTED" -}}<span class="badge badge-danger">Rejected</span>
+{{- else if eq . "PENDING" -}}<span class="badge badge-warn">Pending</span>
+{{- else if . -}}<span class="badge">{{.}}</span>
+{{- else -}}<span class="badge badge-warn">Pending</span>
+{{- end -}}
+{{end}}
+
+{{/* AI vetting verdict badge. Pass a kordinate.VetVerdict. Never render this
+     without the advisory caveat beside it — see kdn-advisory below. */}}
+{{define "kdn-verdict-badge"}}
+{{- if eq (printf "%s" .) "pass" -}}<span class="badge badge-ok">Pass</span>
+{{- else if eq (printf "%s" .) "concerns" -}}<span class="badge badge-warn">Concerns</span>
+{{- else if eq (printf "%s" .) "fail" -}}<span class="badge badge-danger">Fail</span>
+{{- else -}}<span class="badge">Check not run</span>
+{{- end -}}
+{{end}}
+
+{{/* The fixed AI caveat. Always adjacent to a verdict. */}}
+{{define "kdn-advisory"}}<p class="kdn-advisory">{{icon "sparkle"}} {{kdnAdvisory}}</p>{{end}}
+
+{{/* Shared kordinate styles. Everything else comes from core.css. */}}
+{{define "kdn-styles"}}
+<style>
+  .kdn-mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .kdn-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kdn-dash { color: var(--text-muted); }
+
+  .kdn-advisory {
+    display: flex; align-items: center; gap: 7px; margin: 8px 0 0;
+    font-size: var(--fs-sm); color: var(--warn); font-weight: 600;
+  }
+  .kdn-advisory svg { width: 14px; height: 14px; flex: none; }
+
+  /* Identity header: name + key facts on one row, wrapping on narrow screens. */
+  .kdn-idhead { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: flex-start; }
+  .kdn-idfacts { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 8px; }
+  .kdn-fact { font-size: var(--fs-sm); }
+  .kdn-fact dt { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .kdn-fact dd { margin: 2px 0 0; font-weight: 600; }
+
+  /* Balances strip: one tile per product. A nil balance shows an em dash, and a
+     failed lookup shows a warning — never R0.00, which reads as "spent it all". */
+  .kdn-balances { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .kdn-bal { padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+  .kdn-bal-label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .kdn-bal-value { font-size: 22px; font-weight: 700; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .kdn-bal-value.absent { color: var(--text-muted); font-weight: 500; }
+  .kdn-bal-note { font-size: 11.5px; margin-top: 5px; color: var(--text-muted); }
+  .kdn-bal.failed { border-color: color-mix(in srgb, var(--error) 45%, var(--border)); }
+  .kdn-bal.failed .kdn-bal-note { color: var(--error); font-weight: 600; }
+
+  /* Timeline: a day heading, then rows of icon / body / amount. */
+  .kdn-day { margin: 20px 0 8px; font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text-muted); font-weight: 700; }
+  .kdn-day:first-child { margin-top: 0; }
+  .kdn-ev { display: grid; grid-template-columns: 26px 1fr auto; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border); align-items: start; }
+  .kdn-ev-icon { color: var(--text-muted); padding-top: 2px; }
+  .kdn-ev-icon svg { width: 16px; height: 16px; }
+  .kdn-ev-title { font-weight: 600; font-size: var(--fs-sm); }
+  .kdn-ev-meta { color: var(--text-muted); font-size: 11.5px; margin-top: 3px;
+    display: flex; flex-wrap: wrap; gap: 3px 10px; }
+  .kdn-ev-amt { text-align: right; font-variant-numeric: tabular-nums;
+    font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; }
+  .kdn-ev-amt.neg { color: var(--error); }
+  .kdn-src { font-size: 10.5px; padding: 1px 6px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--text-muted); }
+
+  /* Notes panel. */
+  .kdn-note { padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .kdn-note:last-child { border-bottom: 0; }
+  .kdn-note-body { white-space: pre-wrap; font-size: var(--fs-sm); }
+  .kdn-note-meta { color: var(--text-muted); font-size: 11.5px; margin-top: 5px; }
+
+  /* Requirement list: satisfied vs blocking. */
+  .kdn-reqs { list-style: none; margin: 0; padding: 0; }
+  .kdn-reqs li { display: flex; align-items: center; gap: 9px; padding: 7px 0;
+    border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+  .kdn-reqs li:last-child { border-bottom: 0; }
+  .kdn-reqs svg { width: 15px; height: 15px; flex: none; }
+  .kdn-reqs .ok { color: var(--ok); }
+  .kdn-reqs .blocked { color: var(--warn); }
+
+  /* Overdue queue rows read as urgent at a glance. */
+  tr.kdn-overdue td:first-child { box-shadow: inset 3px 0 0 var(--error); }
+  .kdn-sla-breach { color: var(--error); font-weight: 700; }
+  .kdn-sla-soon { color: var(--warn); font-weight: 600; }
+
+  /* Document review: image beside the panels, stacking on narrow screens. */
+  .kdn-split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .kdn-split { grid-template-columns: 1fr; } }
+  .kdn-docimg { max-width: 100%; display: block; border-radius: 8px; border: 1px solid var(--border); }
+
+  /* Redaction canvas sits exactly over the image; the wrapper is the sizing
+     reference both the <img> and the <canvas> follow. */
+  .kdn-canvas-wrap { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+  .kdn-canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+  .kdn-canvas-wrap canvas:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 2px; }
+
+  .kdn-extracted { list-style: none; margin: 0; padding: 0; font-size: var(--fs-sm); }
+  .kdn-extracted li { display: flex; justify-content: space-between; gap: 14px;
+    padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .kdn-extracted dt { color: var(--text-muted); }
+  .kdn-findings { margin: 10px 0 0; padding-left: 20px; font-size: var(--fs-sm); }
+  .kdn-findings li { margin-bottom: 5px; }
+
+  .kdn-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .kdn-filters .form-group { margin-bottom: 0; max-width: 220px; }
+  /* Busy async regions dim rather than collapse, so the page doesn't jump when
+     the timeline arrives. */
+  [aria-busy="true"] { opacity: .55; }
+</style>
+{{end}}

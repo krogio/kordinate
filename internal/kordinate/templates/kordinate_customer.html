@@ -1,0 +1,307 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+{{$guid := .Customer.MMGlobalCustomerID}}
+
+<div class="page-header">
+  <div>
+    <h1>{{.Customer.FullName}} {{template "kdn-status-badge" .Customer.Status}}</h1>
+    <p class="field-hint">Customer 360 — every service's view of this customer, stitched into one page.</p>
+  </div>
+  <div class="row-actions">
+    {{if .CanEdit}}<a class="btn btn-sm" href="/kordinate/customer?guid={{$guid}}&amp;edit=1">{{icon "edit"}} Edit</a>{{end}}
+    <a class="btn btn-sm btn-ghost" href="/kordinate">← Search</a>
+  </div>
+</div>
+
+{{/* ---------- Identity header ---------- */}}
+<div class="card">
+  <div class="kdn-idhead">
+    <div style="flex:1 1 320px;">
+      <div class="kdn-idfacts">
+        <dl class="kdn-fact"><dt>Phone number</dt><dd class="kdn-mono">{{if .Customer.MSISDN}}{{.Customer.MSISDN}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+        <dl class="kdn-fact"><dt>Date of birth</dt><dd>{{if .Customer.DateOfBirth}}{{.Customer.DateOfBirth}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+        <dl class="kdn-fact"><dt>Email</dt><dd>{{if .Customer.EmailAddress}}{{.Customer.EmailAddress}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+        <dl class="kdn-fact">
+          <dt>Risk rating</dt>
+          <dd>
+            {{if .Risk}}
+              {{if ge .Risk.Score 5}}<span class="badge badge-danger">{{.Risk.Score}} / 6</span>
+              {{else if ge .Risk.Score 3}}<span class="badge badge-warn">{{.Risk.Score}} / 6</span>
+              {{else}}<span class="badge badge-ok">{{.Risk.Score}} / 6</span>{{end}}
+              {{if .Risk.Description}}<span class="field-hint"> {{.Risk.Description}}</span>{{end}}
+            {{else}}
+              <span class="kdn-dash">not rated</span>
+            {{end}}
+          </dd>
+        </dl>
+        <dl class="kdn-fact"><dt>Inbound channel</dt><dd>{{if .Customer.InboundChannel}}{{.Customer.InboundChannel}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+        <dl class="kdn-fact"><dt>Activated</dt><dd>{{if .Customer.ActivationDate}}{{.Customer.ActivationDate}}{{else}}<span class="kdn-dash">not activated</span>{{end}}</dd></dl>
+      </div>
+      <p class="kdn-mono text-muted" style="margin:14px 0 0;">
+        GUID {{$guid}}{{if .Customer.ClaireCustomerID}} · Claire ID {{.Customer.ClaireCustomerID}}{{end}}
+      </p>
+    </div>
+  </div>
+
+  {{if or .CanChangeStatus .CanSetRisk .CanResetPIN}}
+  <div class="row-actions" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+    {{if .CanChangeStatus}}
+    <form method="post" action="/kordinate/customer/status" class="inline-form">
+      {{.CSRFField}}
+      <input type="hidden" name="guid" value="{{$guid}}">
+      <label for="kdn-newstatus" class="text-muted" style="margin:0; font-size:11.5px;">Status</label>
+      <select name="status" id="kdn-newstatus" style="width:auto;">
+        {{range .Statuses}}<option value="{{.}}"{{if eq (printf "%s" .) (printf "%s" $.Customer.Status)}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+      <input type="text" name="reason" placeholder="Reason (required)" aria-label="Reason for status change" required>
+      <button type="submit" class="btn btn-sm"
+        data-confirm="Change this customer's status? They may be unable to transact." data-confirm-danger>Apply</button>
+    </form>
+    {{end}}
+    {{if .CanSetRisk}}
+    <form method="post" action="/kordinate/customer/risk" class="inline-form">
+      {{.CSRFField}}
+      <input type="hidden" name="guid" value="{{$guid}}">
+      <label for="kdn-risk" class="text-muted" style="margin:0; font-size:11.5px;">Risk</label>
+      <select name="score" id="kdn-risk" style="width:auto;">
+        {{range .RiskScores}}<option value="{{.}}">{{.}}</option>{{end}}
+      </select>
+      <button type="submit" class="btn btn-sm">Set</button>
+    </form>
+    {{end}}
+    {{if .CanResetPIN}}
+    <form method="post" action="/kordinate/customer/reset-pin">
+      {{.CSRFField}}
+      <input type="hidden" name="guid" value="{{$guid}}">
+      <button type="submit" class="btn btn-sm btn-danger"
+        data-confirm="Reset this customer's app login PIN? They will be signed out and must set a new PIN. Confirm the caller's identity first."
+        data-confirm-danger>{{icon "key"}} Reset login PIN</button>
+    </form>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+
+{{/* ---------- Balances strip ----------
+     Fetched asynchronously because UML fans out to three products behind a VPN.
+     The server-rendered fallback is a loading state; kordinate.js replaces it. */}}
+{{if .CanViewFinancial}}
+<div class="card">
+  <h2>Balances</h2>
+  <div id="kdn-balances" class="kdn-balances" data-guid="{{$guid}}" data-msisdn="{{.Customer.MSISDN}}"
+       aria-live="polite" aria-busy="true">
+    <p class="field-hint" style="grid-column:1/-1; margin:0;">Loading balances…</p>
+  </div>
+  <noscript><p class="field-hint">Balances need JavaScript — they are fetched per product so one slow service can't hold up the page.</p></noscript>
+</div>
+{{end}}
+
+{{/* ---------- Onboarding case ---------- */}}
+<div class="card">
+  <h2 style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <span>Onboarding case</span>
+    {{if .Case}}<a class="btn btn-sm btn-ghost" href="/kordinate/onboarding/case?id={{.Case.ID}}">Full case →</a>{{end}}
+  </h2>
+
+  {{if .Case}}
+  <p style="margin:0 0 12px;">
+    {{template "kdn-state-badge" .Case.State}}
+    <span class="field-hint"> {{.Case.State.Description}}</span>
+  </p>
+  <div class="kdn-idfacts" style="margin-bottom:14px;">
+    <dl class="kdn-fact"><dt>Assignee</dt><dd>{{if .Case.Assignee}}{{.Case.Assignee}}{{else}}<span class="kdn-dash">unassigned</span>{{end}}</dd></dl>
+    <dl class="kdn-fact"><dt>Opened</dt><dd>{{kdnRelTime .Case.OpenedAt}}</dd></dl>
+    <dl class="kdn-fact">
+      <dt>SLA</dt>
+      <dd>
+        {{if .Case.ClosedAt}}<span class="kdn-dash">closed</span>
+        {{else if .Case.SLADueAt}}
+          {{if .Case.Overdue $.Now}}<span class="kdn-sla-breach">overdue since {{.Case.SLADueAt.Format "2 Jan 15:04"}}</span>
+          {{else}}due {{.Case.SLADueAt.Format "2 Jan 15:04"}}{{end}}
+        {{else}}<span class="kdn-dash">no clock — waiting on the customer</span>{{end}}
+      </dd>
+    </dl>
+  </div>
+
+  {{if .Outstanding}}
+  <h3 style="font-size:13px; margin:0 0 4px;">Outstanding requirements</h3>
+  <ul class="kdn-reqs">
+    {{range .Outstanding}}
+    <li>
+      {{if .Satisfied}}<span class="ok">{{icon "check"}}</span>{{else}}<span class="blocked">{{icon "clock"}}</span>{{end}}
+      <span><strong>{{.Label}}</strong> — {{.Status}}</span>
+    </li>
+    {{end}}
+  </ul>
+  {{else}}
+  <p class="field-hint">Nothing outstanding for this state.</p>
+  {{end}}
+
+  {{if and .CanAdvance .NextStates}}
+  <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+    <h3 style="font-size:13px; margin:0 0 8px;">Move the case</h3>
+    <form method="post" action="/kordinate/onboarding/move">
+      {{.CSRFField}}
+      <input type="hidden" name="id" value="{{.Case.ID}}">
+      <input type="hidden" name="guid" value="{{$guid}}">
+      <div class="form-group" style="max-width:100%;">
+        <label for="kdn-move-note">Note <span class="field-hint">(recorded against the transition)</span></label>
+        <input type="text" name="note" id="kdn-move-note" placeholder="Why this move?" autocomplete="off">
+      </div>
+      <div class="row-actions">
+        {{range .NextStates}}
+        <button type="submit" name="to" value="{{.}}"
+          class="btn btn-sm{{if eq (printf "%s" .) "REJECTED"}} btn-danger{{else if eq (printf "%s" .) "APPROVED"}} btn-primary{{end}}"
+          {{if eq (printf "%s" .) "REJECTED"}}data-confirm="Reject this application? This closes the case and cannot be undone." data-confirm-danger{{end}}>
+          → {{kdnState .}}
+        </button>
+        {{end}}
+      </div>
+    </form>
+  </div>
+  {{end}}
+
+  {{else}}
+  <div class="empty-state" style="padding:16px 0;">
+    <p>No onboarding case for this customer.</p>
+    <p class="field-hint">Customers who predate kordinate have no case record. Opening one starts the audit trail from today, seeded at <strong>{{kdnState .SuggestedState}}</strong> based on their current documents and status.</p>
+    {{if .CanAdvance}}
+    <form method="post" action="/kordinate/onboarding/open">
+      {{.CSRFField}}
+      <input type="hidden" name="guid" value="{{$guid}}">
+      <input type="hidden" name="state" value="{{.SuggestedState}}">
+      <button type="submit" class="btn btn-sm btn-primary">Open a case</button>
+    </form>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+
+{{/* ---------- Documents ---------- */}}
+{{if .CanViewDocuments}}
+<div class="card" style="padding:0;">
+  <div style="padding:14px 20px;"><h2 style="margin:0;">Documents</h2></div>
+  {{if .Documents}}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Type</th><th scope="col">Number</th><th scope="col">Status</th>
+          <th scope="col">Issued</th><th scope="col">Expires</th><th scope="col">Uploaded</th><th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Documents}}
+        <tr>
+          <th scope="row" style="font-weight:600;">{{kdnDocLabel .DocumentType}}</th>
+          <td class="kdn-mono">{{if .DocumentNumber}}{{.DocumentNumber}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td>{{template "kdn-doc-badge" .DocumentStatus}}</td>
+          <td class="field-hint">{{if .IssueDate}}{{.IssueDate}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="field-hint">{{if .ExpiryDate}}{{.ExpiryDate}}{{else}}<span class="kdn-dash">no expiry</span>{{end}}</td>
+          <td class="field-hint">{{if .TimeCreated}}{{.TimeCreated}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="actions">
+            {{if .MediaID}}<a class="btn btn-sm" href="/kordinate/documents/view?guid={{$guid}}&amp;media={{.MediaID}}">Review</a>{{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <p class="field-hint" style="padding:0 20px 16px;">No documents on file.</p>
+  {{end}}
+
+  {{if .CanUploadDocument}}
+  <form method="post" action="/kordinate/documents/upload" enctype="multipart/form-data"
+        style="padding:16px 20px; border-top:1px solid var(--border);">
+    {{.CSRFField}}
+    <input type="hidden" name="guid" value="{{$guid}}">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-up-type">Document type</label>
+        <select name="doc_type" id="kdn-up-type" required>
+          {{range .DocTypes}}<option value="{{.}}">{{kdnDocLabel .}}</option>{{end}}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="kdn-up-file">File <span class="field-hint">(JPEG, PNG or GIF — PDFs cannot be redacted)</span></label>
+        <input type="file" name="file" id="kdn-up-file" accept="image/jpeg,image/png,image/gif" required>
+      </div>
+      <div class="form-group">
+        <label for="kdn-up-expiry">Expiry date <span class="field-hint">(if any)</span></label>
+        <input type="date" name="expiry_date" id="kdn-up-expiry">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">{{icon "plus"}} Upload document</button>
+  </form>
+  {{end}}
+</div>
+{{end}}
+
+{{/* ---------- Stitched activity timeline ----------
+     Lazy-loaded: six services fan out concurrently server-side, but the page
+     itself must paint before that returns. Partial failure is expected — the
+     banner naming the dead sources is rendered by kordinate.js. */}}
+<div class="card">
+  <h2 style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+    <span>Activity</span>
+    <span class="field-hint">Every service's events, newest first.</span>
+  </h2>
+
+  <div id="kdn-timeline-degraded" role="alert" hidden></div>
+  <div id="kdn-timeline" data-guid="{{$guid}}" data-from="{{.From}}" data-to="{{.To}}"
+       aria-live="polite" aria-busy="true">
+    <p class="field-hint">Loading activity from all services…</p>
+  </div>
+  <noscript>
+    <p class="field-hint">The timeline is fetched asynchronously and needs JavaScript. Without it, use the per-service sections above.</p>
+  </noscript>
+</div>
+
+{{/* ---------- Notes ---------- */}}
+<div class="card">
+  <h2>Notes</h2>
+  <form method="post" action="/kordinate/customer/note" style="margin-bottom:18px;">
+    {{.CSRFField}}
+    <input type="hidden" name="guid" value="{{$guid}}">
+    <div class="form-group" style="max-width:100%;">
+      <label for="kdn-note-body">Add a note</label>
+      <textarea name="body" id="kdn-note-body" rows="3" required
+        placeholder="What the customer asked, what you did, what happens next."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="kdn-note-sentiment">Sentiment</label>
+        <select name="sentiment" id="kdn-note-sentiment">
+          <option value="">None</option>
+          {{range .Sentiments}}<option value="{{.Label}}">{{.Label}}</option>{{end}}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="kdn-note-ticket">Ticket reference</label>
+        <input type="text" name="ticket_ref" id="kdn-note-ticket" placeholder="e.g. ZD-10482" autocomplete="off">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">{{icon "message"}} Add note</button>
+  </form>
+
+  {{if .Notes}}
+  <div>
+    {{range .Notes}}
+    <article class="kdn-note">
+      <div class="kdn-note-body">{{.Body}}</div>
+      <div class="kdn-note-meta">
+        {{.Author}} · <time datetime="{{.At.Format "2006-01-02T15:04:05Z07:00"}}">{{kdnRelTime .At}}</time>
+        {{if .Sentiment}} · <span class="pill">{{.Sentiment}}</span>{{end}}
+        {{if .TicketRef}} · {{.TicketRef}}{{end}}
+      </div>
+    </article>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="field-hint">No notes yet. The first note on a customer is usually the most useful one.</p>
+  {{end}}
+</div>
+
+<script src="/kordinate/static/kordinate.js"></script>
+{{end}}

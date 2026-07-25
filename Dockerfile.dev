@@ -1,0 +1,9 @@
+# Dev image for kordinate (the kore product). air rebuilds on save; a
+# container-local go.work overlays the mounted local kore checkout so edits to
+# either repo hot-reload. Production uses Dockerfile (pinned kore from GitHub).
+FROM golang:1.26-alpine
+RUN apk add --no-cache git ca-certificates && go install github.com/air-verse/air@latest
+RUN printf 'go 1.26.5\n\nuse /app\n\nreplace github.com/krogio/kore => /kore\n' > /go.work
+ENV GOWORK=/go.work
+WORKDIR /app
+CMD ["/bin/sh","-c","[ -f /run/certs/rootCA.pem ] && cp /run/certs/rootCA.pem /usr/local/share/ca-certificates/mkcert-root.crt && update-ca-certificates >/dev/null 2>&1; exec air"]

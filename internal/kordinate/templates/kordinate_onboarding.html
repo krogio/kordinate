@@ -1,0 +1,149 @@
+{{define "content"}}
+{{template "kdn-styles"}}
+
+<div class="page-header">
+  <div>
+    <h1>Onboarding queue</h1>
+    <p class="field-hint">Work sorted most-at-risk first: SLA breaches, then priority, then oldest. States where we're waiting on the customer carry no clock against us.</p>
+  </div>
+  <a class="btn btn-sm btn-ghost" href="/kordinate">Customer search</a>
+</div>
+
+{{/* ---------- Summary tiles per state ---------- */}}
+<div class="stat-grid">
+  {{range .StateTiles}}
+  <a class="stat" href="/kordinate/onboarding?state={{.State}}" style="text-decoration:none; color:inherit;
+     {{if eq (printf "%s" .State) (printf "%s" $.Filter.State)}}border-color:var(--brand-accent);{{end}}">
+    <div class="stat-value">{{.Count}}</div>
+    <div class="stat-label">{{kdnState .State}}</div>
+    {{if .Overdue}}<div class="kdn-sla-breach" style="font-size:11.5px; margin-top:4px;">{{.Overdue}} overdue</div>{{end}}
+  </a>
+  {{end}}
+</div>
+
+{{/* ---------- Filters ---------- */}}
+<div class="card">
+  <form method="get" action="/kordinate/onboarding" class="kdn-filters">
+    <div class="form-group">
+      <label for="kdn-f-state">State</label>
+      <select name="state" id="kdn-f-state">
+        <option value="">All open states</option>
+        {{range .States}}
+        <option value="{{.}}"{{if eq (printf "%s" .) (printf "%s" $.Filter.State)}} selected{{end}}>{{kdnState .}}</option>
+        {{end}}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="kdn-f-assignee">Assignee</label>
+      <select name="assignee" id="kdn-f-assignee">
+        <option value="">Anyone</option>
+        <option value="{{.Me}}"{{if eq .Filter.Assignee .Me}} selected{{end}}>Mine ({{.Me}})</option>
+        {{range .Assignees}}
+        {{if ne . $.Me}}<option value="{{.}}"{{if eq . $.Filter.Assignee}} selected{{end}}>{{.}}</option>{{end}}
+        {{end}}
+      </select>
+    </div>
+    <div class="form-group" style="max-width:none;">
+      <label class="checkbox-label">
+        <input type="checkbox" name="unassigned" value="1"{{if .Filter.Unassigned}} checked{{end}}>
+        Unassigned only
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="overdue" value="1"{{if .Filter.OverdueOnly}} checked{{end}}>
+        Overdue only
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="closed" value="1"{{if .Filter.IncludeClosed}} checked{{end}}>
+        Include closed
+      </label>
+    </div>
+    <div class="row-actions">
+      <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+      <a class="btn btn-sm btn-ghost" href="/kordinate/onboarding">Reset</a>
+    </div>
+  </form>
+</div>
+
+{{/* ---------- The queue ---------- */}}
+<div class="card" style="padding:0;">
+  <div style="padding:14px 20px;">
+    <h2 style="margin:0;">{{len .Cases}} case{{if ne (len .Cases) 1}}s{{end}}{{if .Filter.OverdueOnly}} — overdue{{end}}</h2>
+  </div>
+  {{if .Cases}}
+  <div class="table-wrap">
+    <table>
+      <caption class="field-hint" style="caption-side:bottom; text-align:left; padding:8px 20px;">
+        Overdue cases appear first and are marked in the SLA column.
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Customer</th>
+          <th scope="col">State</th>
+          <th scope="col">SLA</th>
+          <th scope="col">Assignee</th>
+          <th scope="col">Opened</th>
+          <th scope="col">Assign to</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Cases}}
+        <tr{{if .Overdue $.Now}} class="kdn-overdue"{{end}}>
+          <th scope="row" style="font-weight:600;">
+            <a href="/kordinate/customer?guid={{.MMGuid}}">{{if .DisplayName}}{{.DisplayName}}{{else}}(unnamed){{end}}</a>
+            <div class="kdn-mono text-muted" style="font-weight:400;">{{.MSISDN}}</div>
+          </th>
+          <td>{{template "kdn-state-badge" .State}}</td>
+          <td>
+            {{if .ClosedAt}}<span class="kdn-dash">closed</span>
+            {{else if .SLADueAt}}
+              {{if .Overdue $.Now}}
+                <span class="kdn-sla-breach">overdue {{kdnRelTime .SLADueAt}}</span>
+              {{else}}
+                <span class="kdn-sla-soon">due {{.SLADueAt.Format "2 Jan 15:04"}}</span>
+              {{end}}
+            {{else}}
+              <span class="kdn-dash" title="Waiting on the customer — no clock against us">no clock</span>
+            {{end}}
+          </td>
+          <td>{{if .Assignee}}{{.Assignee}}{{else}}<span class="kdn-dash">unassigned</span>{{end}}</td>
+          <td class="field-hint">{{kdnRelTime .OpenedAt}}</td>
+          <td>
+            {{if $.CanAssign}}
+            <form method="post" action="/kordinate/onboarding/assign" class="inline-form">
+              {{$.CSRFField}}
+              <input type="hidden" name="id" value="{{.ID}}">
+              <label class="text-muted" for="kdn-assign-{{.ID}}" style="position:absolute; left:-9999px;">Assign case {{.ID}} to</label>
+              <select name="assignee" id="kdn-assign-{{.ID}}" style="width:auto;">
+                <option value="">— unassign —</option>
+                <option value="{{$.Me}}"{{if eq .Assignee $.Me}} selected{{end}}>me</option>
+                {{range $.Assignees}}
+                {{if ne . $.Me}}<option value="{{.}}"{{if eq . $.Me}} selected{{end}}>{{.}}</option>{{end}}
+                {{end}}
+              </select>
+              <button type="submit" class="btn btn-sm">Set</button>
+            </form>
+            {{else}}
+            <span class="kdn-dash">—</span>
+            {{end}}
+          </td>
+          <td class="actions"><a class="btn btn-sm" href="/kordinate/onboarding/case?id={{.ID}}">Work it</a></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <p><strong>Nothing in this queue.</strong></p>
+    <p class="field-hint">
+      {{if or .Filter.State .Filter.Assignee .Filter.Unassigned .Filter.OverdueOnly}}
+      No cases match these filters — try resetting them.
+      {{else}}
+      No open onboarding cases. Cases are opened from a customer's 360 page.
+      {{end}}
+    </p>
+  </div>
+  {{end}}
+</div>
+{{end}}
