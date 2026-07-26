@@ -3,7 +3,9 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/kordinate ./cmd/kordinate"
+# Stamp the version so the footer shows a real build identity rather than "dev".
+# Derived from git at build time, so it tracks the tags instead of drifting.
+cmd = "go build -ldflags \"-X github.com/krogio/kore/version.product=$(git describe --tags --always --dirty 2>/dev/null || echo dev) -X github.com/krogio/kore/version.commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\" -o ./tmp/kordinate ./cmd/kordinate"
 bin = "./tmp/kordinate"
 include_ext = ["go", "html", "css", "js", "toml"]
 exclude_dir = ["tmp", ".git"]
