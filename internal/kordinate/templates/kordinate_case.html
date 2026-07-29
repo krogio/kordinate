@@ -23,7 +23,7 @@
 
 <div class="card">
   <div class="kdn-idfacts">
-    <dl class="kdn-fact"><dt>Phone number</dt><dd class="kdn-mono">{{if .Case.MSISDN}}{{.Case.MSISDN}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+    <dl class="kdn-fact"><dt>Phone number</dt><dd class="mono">{{if .Case.MSISDN}}{{.Case.MSISDN}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
     <dl class="kdn-fact"><dt>Owning team</dt><dd>{{if .Case.State.Owner}}{{.Case.State.Owner}}{{else}}<span class="kdn-dash">none</span>{{end}}</dd></dl>
     <dl class="kdn-fact"><dt>Assignee</dt><dd>{{if .Case.Assignee}}{{.Case.Assignee}}{{else}}<span class="kdn-dash">unassigned</span>{{end}}</dd></dl>
     <dl class="kdn-fact"><dt>Opened</dt><dd>{{.Case.OpenedAt.Format "2 Jan 2006 15:04"}} <span class="field-hint">by {{.Case.CreatedBy}}</span></dd></dl>

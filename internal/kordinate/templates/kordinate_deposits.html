@@ -10,7 +10,7 @@
 </div>
 
 <div class="card">
-  <form method="get" action="/kordinate/deposits" class="kdn-filters">
+  <form method="get" action="/kordinate/deposits" class="toolbar-group">
     <div class="form-group">
       <label for="kdn-f-ref">Reference</label>
       <input type="text" name="reference" id="kdn-f-ref" value="{{.Filter.Reference}}" autocomplete="off">
@@ -47,7 +47,7 @@
           <th scope="col">Reference</th>
           <th scope="col">Bank</th>
           <th scope="col">Channel</th>
-          <th scope="col" class="kdn-num">Amount</th>
+          <th scope="col" class="num">Amount</th>
           <th scope="col">Outcome</th>
           <th scope="col">Customer</th>
           <th scope="col">Actions</th>
@@ -57,10 +57,10 @@
         {{range .Deposits}}
         <tr>
           <td class="field-hint" style="white-space:nowrap;">{{.DateReceived.Format "2006-01-02 15:04"}}</td>
-          <th scope="row" class="kdn-mono" style="font-weight:600;">{{.OriginalReference}}</th>
+          <th scope="row" class="mono" style="font-weight:600;">{{.OriginalReference}}</th>
           <td>{{if .Bank}}{{.Bank}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
           <td><span class="pill">{{.PaymentChannel}}</span></td>
-          <td class="kdn-num">{{zar .Amount}}</td>
+          <td class="num">{{zar .Amount}}</td>
           <td>
             {{if eq .ProcessOutcome "MANUAL_INTERVENTION_REQUIRED"}}<span class="badge badge-warn">Needs handling</span>
             {{else if eq .ProcessOutcome "PENDING_PROCESSING"}}<span class="badge">Pending</span>
@@ -71,7 +71,7 @@
           </td>
           <td>
             {{if .MMGlobalCustomerID}}
-            <a class="kdn-mono" href="/kordinate/customer?guid={{.MMGlobalCustomerID}}">{{.MMGlobalCustomerID}}</a>
+            <a class="mono" href="/kordinate/customer?guid={{.MMGlobalCustomerID}}">{{.MMGlobalCustomerID}}</a>
             {{else}}
             <span class="kdn-dash">unmatched</span>
             {{end}}

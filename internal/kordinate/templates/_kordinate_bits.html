@@ -58,8 +58,8 @@
 {{/* Shared kordinate styles. Everything else comes from core.css. */}}
 {{define "kdn-styles"}}
 <style>
-  .kdn-mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
-  .kdn-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .kdn-dash { color: var(--text-muted); }
 
   .kdn-advisory {
@@ -69,7 +69,6 @@
   .kdn-advisory svg { width: 14px; height: 14px; flex: none; }
 
   /* Identity header: name + key facts on one row, wrapping on narrow screens. */
-  .kdn-idhead { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: flex-start; }
   .kdn-idfacts { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 8px; }
   .kdn-fact { font-size: var(--fs-sm); }
   .kdn-fact dt { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
@@ -107,7 +106,6 @@
   .kdn-note { padding: 11px 0; border-bottom: 1px solid var(--border); }
   .kdn-note:last-child { border-bottom: 0; }
   .kdn-note-body { white-space: pre-wrap; font-size: var(--fs-sm); }
-  .kdn-note-meta { color: var(--text-muted); font-size: 11.5px; margin-top: 5px; }
 
   /* Requirement list: satisfied vs blocking. */
   .kdn-reqs { list-style: none; margin: 0; padding: 0; }
@@ -141,8 +139,8 @@
   .kdn-findings { margin: 10px 0 0; padding-left: 20px; font-size: var(--fs-sm); }
   .kdn-findings li { margin-bottom: 5px; }
 
-  .kdn-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-  .kdn-filters .form-group { margin-bottom: 0; max-width: 220px; }
+  /* Filter fields inside a shared .toolbar-group. */
+  .toolbar-group .form-group { margin-bottom: 0; max-width: 220px; }
   /* Busy async regions dim rather than collapse, so the page doesn't jump when
      the timeline arrives. */
   [aria-busy="true"] { opacity: .55; }

@@ -23,7 +23,7 @@
 
 {{/* ---------- Filters ---------- */}}
 <div class="card">
-  <form method="get" action="/kordinate/onboarding" class="kdn-filters">
+  <form method="get" action="/kordinate/onboarding" class="toolbar-group">
     <div class="form-group">
       <label for="kdn-f-state">State</label>
       <select name="state" id="kdn-f-state">
@@ -91,7 +91,7 @@
         <tr{{if .Overdue $.Now}} class="kdn-overdue"{{end}}>
           <th scope="row" style="font-weight:600;">
             <a href="/kordinate/customer?guid={{.MMGuid}}">{{if .DisplayName}}{{.DisplayName}}{{else}}(unnamed){{end}}</a>
-            <div class="kdn-mono text-muted" style="font-weight:400;">{{.MSISDN}}</div>
+            <div class="mono text-muted" style="font-weight:400;">{{.MSISDN}}</div>
           </th>
           <td>{{template "kdn-state-badge" .State}}</td>
           <td>

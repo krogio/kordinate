@@ -23,7 +23,7 @@
 {{end}}
 
 <div class="card">
-  <form method="get" action="/kordinate/access-log" class="kdn-filters">
+  <form method="get" action="/kordinate/access-log" class="toolbar-group">
     <div class="form-group">
       <label for="kdn-f-principal">Principal</label>
       <input type="text" name="principal" id="kdn-f-principal" value="{{.Filter.Principal}}" autocomplete="off" placeholder="agent@mamamoney.co.za">
@@ -83,8 +83,8 @@
             {{else if eq .Action "view_customer"}}<span class="badge">Customer viewed</span>
             {{else}}<span class="badge">{{.Action}}</span>{{end}}
           </td>
-          <td class="kdn-mono"><a href="/kordinate/customer?guid={{.MMGuid}}">{{.MMGuid}}</a></td>
-          <td class="kdn-mono text-muted">{{if .Target}}{{.Target}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="mono"><a href="/kordinate/customer?guid={{.MMGuid}}">{{.MMGuid}}</a></td>
+          <td class="mono text-muted">{{if .Target}}{{.Target}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
           <td class="field-hint">{{if .Reason}}{{.Reason}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
         </tr>
         {{end}}

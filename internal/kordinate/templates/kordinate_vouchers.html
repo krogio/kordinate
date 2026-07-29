@@ -10,7 +10,7 @@
 </div>
 
 <div class="card">
-  <form method="get" action="/kordinate/vouchers" class="kdn-filters">
+  <form method="get" action="/kordinate/vouchers" class="toolbar-group">
     <div class="form-group">
       <label for="kdn-f-code">Voucher code</label>
       <input type="text" name="code" id="kdn-f-code" value="{{.Filter.Code}}" autocomplete="off">
@@ -36,7 +36,7 @@
       <thead>
         <tr>
           <th scope="col">Code</th>
-          <th scope="col" class="kdn-num">Amount</th>
+          <th scope="col" class="num">Amount</th>
           <th scope="col">Status</th>
           <th scope="col">Recipient</th>
           <th scope="col">Issued</th>
@@ -48,8 +48,8 @@
       <tbody>
         {{range .Vouchers}}
         <tr>
-          <th scope="row" class="kdn-mono" style="font-weight:600;">{{.Code}}</th>
-          <td class="kdn-num">{{if eq .Currency "ZAR"}}{{zar .Amount}}{{else}}{{.Currency}} {{.Amount}}{{end}}</td>
+          <th scope="row" class="mono" style="font-weight:600;">{{.Code}}</th>
+          <td class="num">{{if eq .Currency "ZAR"}}{{zar .Amount}}{{else}}{{.Currency}} {{.Amount}}{{end}}</td>
           <td>
             {{if eq .Status "REDEEMED"}}<span class="badge badge-ok">Redeemed</span>
             {{else if eq .Status "CANCELLED"}}<span class="badge">Cancelled</span>
@@ -58,7 +58,7 @@
           </td>
           <td>
             {{if .Recipient.Name}}{{.Recipient.Name}}{{end}}
-            {{if .Recipient.MSISDN}}<div class="kdn-mono field-hint">{{.Recipient.MSISDN}}</div>{{end}}
+            {{if .Recipient.MSISDN}}<div class="mono field-hint">{{.Recipient.MSISDN}}</div>{{end}}
             {{if and (not .Recipient.Name) (not .Recipient.MSISDN)}}<span class="kdn-dash">—</span>{{end}}
           </td>
           <td class="field-hint" style="white-space:nowrap;">{{.CreatedAt.Format "2006-01-02"}}</td>

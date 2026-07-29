@@ -10,7 +10,7 @@
 </div>
 
 <div class="card">
-  <form method="get" action="/kordinate/documents" class="kdn-filters">
+  <form method="get" action="/kordinate/documents" class="toolbar-group">
     <div class="form-group">
       <label for="kdn-f-status">Status</label>
       <select name="status" id="kdn-f-status">
@@ -56,7 +56,7 @@
         <tr>
           <th scope="row" style="font-weight:600;">
             <a href="/kordinate/customer?guid={{.MMGuid}}">{{if .DisplayName}}{{.DisplayName}}{{else}}(unnamed){{end}}</a>
-            <div class="kdn-mono text-muted" style="font-weight:400;">{{.MSISDN}}</div>
+            <div class="mono text-muted" style="font-weight:400;">{{.MSISDN}}</div>
           </th>
           <td>
             {{kdnDocLabel .Doc.DocumentType}}

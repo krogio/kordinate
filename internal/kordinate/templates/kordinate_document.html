@@ -7,7 +7,7 @@
   <div>
     <h1>{{kdnDocLabel .Doc.DocumentType}} {{template "kdn-doc-badge" .Doc.DocumentStatus}}</h1>
     <p class="field-hint">
-      {{.Customer.FullName}} · <span class="kdn-mono">{{.Customer.MSISDN}}</span>
+      {{.Customer.FullName}} · <span class="mono">{{.Customer.MSISDN}}</span>
       {{if .Doc.DocumentNumber}} · document no. {{.Doc.DocumentNumber}}{{end}}
     </p>
   </div>
@@ -114,7 +114,7 @@
       <h3 style="font-size:13px; margin:16px 0 6px;">Fields read off the document</h3>
       <ul class="kdn-extracted">
         {{range $field, $value := .Vetting.Extracted}}
-        {{if $value}}<li><dt>{{$field}}</dt><dd class="kdn-mono">{{$value}}</dd></li>{{end}}
+        {{if $value}}<li><dt>{{$field}}</dt><dd class="mono">{{$value}}</dd></li>{{end}}
         {{end}}
       </ul>
       <p class="field-hint" style="margin-top:8px;">A blank field means the model could not read it — not that the document lacks it.</p>
@@ -182,7 +182,7 @@
         {{range .SensitiveFields}}
         <li>
           <dt>{{kdnPIILabel .Kind}} <span class="field-hint">({{.Field}})</span></dt>
-          <dd class="kdn-mono">{{.Preview}}</dd>
+          <dd class="mono">{{.Preview}}</dd>
         </li>
         {{end}}
       </ul>

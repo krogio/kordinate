@@ -1,3 +1,13 @@
+# Hot reload for kordinate. Watches kordinate's own sources ONLY.
+#
+# kore changes do NOT hot-reload. air cannot watch outside `root`, and
+# core.css/templates are go:embed'ed into the binary — so editing the mounted
+# /kore changes the file on disk while this process keeps serving the embedded
+# copy it started with. A framework fix then looks applied (the mount has it)
+# while every product still serves the old asset.
+#
+# After changing kore, restart the product: `docker compose restart <product>`.
+# The Go build cache picks up the changed kore files on start.
 # Hot reload for kordinate (the customer operations console).
 root = "."
 tmp_dir = "tmp"

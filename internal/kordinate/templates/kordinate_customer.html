@@ -29,10 +29,10 @@
 {{template "rec-section-close" .}}
 
 {{template "rec-section-open" dict "Key" "metadata" "Title" "Identity"}}
-  <div class="kdn-idhead">
+  <div class="toolbar-group">
     <div style="flex:1 1 320px;">
       <div class="kdn-idfacts">
-        <dl class="kdn-fact"><dt>Phone number</dt><dd class="kdn-mono">{{if .Customer.MSISDN}}{{.Customer.MSISDN}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
+        <dl class="kdn-fact"><dt>Phone number</dt><dd class="mono">{{if .Customer.MSISDN}}{{.Customer.MSISDN}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
         <dl class="kdn-fact"><dt>Date of birth</dt><dd>{{if .Customer.DateOfBirth}}{{.Customer.DateOfBirth}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
         <dl class="kdn-fact"><dt>Email</dt><dd>{{if .Customer.EmailAddress}}{{.Customer.EmailAddress}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
         <dl class="kdn-fact">
@@ -51,7 +51,7 @@
         <dl class="kdn-fact"><dt>Inbound channel</dt><dd>{{if .Customer.InboundChannel}}{{.Customer.InboundChannel}}{{else}}<span class="kdn-dash">—</span>{{end}}</dd></dl>
         <dl class="kdn-fact"><dt>Activated</dt><dd>{{if .Customer.ActivationDate}}{{.Customer.ActivationDate}}{{else}}<span class="kdn-dash">not activated</span>{{end}}</dd></dl>
       </div>
-      <p class="kdn-mono text-muted" style="margin:14px 0 0;">
+      <p class="mono text-muted" style="margin:14px 0 0;">
         GUID {{$guid}}{{if .Customer.ClaireCustomerID}} · Claire ID {{.Customer.ClaireCustomerID}}{{end}}
       </p>
     </div>
@@ -203,7 +203,7 @@
         {{range .Documents}}
         <tr>
           <th scope="row" style="font-weight:600;">{{kdnDocLabel .DocumentType}}</th>
-          <td class="kdn-mono">{{if .DocumentNumber}}{{.DocumentNumber}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
+          <td class="mono">{{if .DocumentNumber}}{{.DocumentNumber}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
           <td>{{template "kdn-doc-badge" .DocumentStatus}}</td>
           <td class="field-hint">{{if .IssueDate}}{{.IssueDate}}{{else}}<span class="kdn-dash">—</span>{{end}}</td>
           <td class="field-hint">{{if .ExpiryDate}}{{.ExpiryDate}}{{else}}<span class="kdn-dash">no expiry</span>{{end}}</td>
@@ -295,7 +295,7 @@
     {{range .Notes}}
     <article class="kdn-note">
       <div class="kdn-note-body">{{.Body}}</div>
-      <div class="kdn-note-meta">
+      <div class="meta-inline">
         {{.Author}} · <time datetime="{{.At.Format "2006-01-02T15:04:05Z07:00"}}">{{kdnRelTime .At}}</time>
         {{if .Sentiment}} · <span class="pill">{{.Sentiment}}</span>{{end}}
         {{if .TicketRef}} · {{.TicketRef}}{{end}}
