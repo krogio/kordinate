@@ -2,7 +2,7 @@ module github.com/krogio/kordinate
 
 go 1.26.5
 
-require github.com/krogio/kore v0.28.2
+require github.com/krogio/kore v0.29.1
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
