@@ -148,6 +148,10 @@ func (v *Vetter) Vet(ctx context.Context, req VetRequest) (*Vetting, error) {
 		// Cap the response: the schema is small, and a runaway generation on a
 		// document image is pure cost.
 		MaxTokens: 1500,
+		// A verdict on a customer-submitted document: reads text a stranger wrote,
+		// and its answer gates what happens to the document. Plan tier — this is
+		// not the call to economise on.
+		Task: ai.TaskPlan,
 	})
 	if err != nil {
 		res.Verdict = VerdictError
